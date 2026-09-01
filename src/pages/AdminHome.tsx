@@ -53,7 +53,7 @@ export const AdminHome: React.FC<AdminHomeProps> = ({
             </span>
             <span className="h-1 w-1 rounded-full bg-slate-300" />
             <span className="text-xs text-slate-500 font-medium">
-              {currentUser?.hub || 'Nairobi Central Sorting Hub'}
+              {currentUser?.hub || 'Mauritius Operations Hub'}
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mt-1">

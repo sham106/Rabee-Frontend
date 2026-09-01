@@ -57,6 +57,11 @@ export const AddRecordsFlow: React.FC<AddRecordsFlowProps> = ({ onFinish, onCanc
   const dayAllocations = allocations.filter(a => a.date === selectedDate);
   const totalAllocated = dayAllocations.reduce((sum, a) => sum + a.quantity, 0);
   const remainingUnallocated = totalReceived - totalAllocated;
+  const selectedRiderCurrentQty = selectedRider
+    ? dayAllocations.find(a => a.rider_id === selectedRider.id)?.quantity || 0
+    : 0;
+  const projectedAllocated = totalAllocated - selectedRiderCurrentQty + allocationQty;
+  const projectedRemaining = totalReceived - projectedAllocated;
 
   // Filter riders for search
   const activeRiders = riders.filter(r => r.status === 'active');
@@ -429,6 +434,25 @@ export const AddRecordsFlow: React.FC<AddRecordsFlowProps> = ({ onFinish, onCanc
                 unit="parcels"
                 autoFocus
               />
+
+              <div className={`rounded-2xl border p-4 ${projectedRemaining < 0 ? 'border-rose-200 bg-rose-50' : 'border-emerald-200 bg-emerald-50'}`} aria-live="polite">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">After this allocation</p>
+                    <p className="mt-0.5 text-xs text-slate-600">{projectedAllocated} of {totalReceived} parcels will be allocated.</p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-2xl font-black ${projectedRemaining < 0 ? 'text-rose-700' : 'text-emerald-700'}`}>{projectedRemaining}</p>
+                    <p className="text-xs font-semibold text-slate-500">remaining</p>
+                  </div>
+                </div>
+                {projectedRemaining < 0 && (
+                  <p className="mt-3 flex items-center gap-2 text-xs font-semibold text-rose-700">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    This exceeds the recorded intake by {Math.abs(projectedRemaining)} parcels. Select Save again to confirm an authorized override.
+                  </p>
+                )}
+              </div>
 
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1.5">

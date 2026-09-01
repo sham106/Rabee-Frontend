@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { MobileHeader } from './components/navigation/MobileHeader';
 import { BottomNavigation } from './components/navigation/BottomNavigation';
@@ -21,9 +21,13 @@ import { ReportsPage } from './pages/ReportsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { NavTab } from './types';
 import { motion, AnimatePresence } from 'motion/react';
+import { AlertTriangle } from 'lucide-react';
+import { getLocalDateString } from './utils/dates';
+import { formatDate } from './utils/formatters';
+import { ApiService } from './services/api';
 
 function RabeeMainApp() {
-  const { currentUser, setCurrentUser } = useApp();
+  const { currentUser, setCurrentUser, selectedDate } = useApp();
 
   // Navigation state
   const [activeTab, setActiveTab] = useState<NavTab>('home');
@@ -31,7 +35,17 @@ function RabeeMainApp() {
   const [isAddRecordsOpen, setIsAddRecordsOpen] = useState(false);
   const [isRecordReturnOpen, setIsRecordReturnOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  // Authentication is session-scoped: always begin at the role-based login screen.
+  const [isLoggedIn, setIsLoggedIn] = useState(() => ApiService.hasSession());
+
+  useEffect(() => {
+    const handleExpiredSession = () => {
+      setCurrentUser(null);
+      setIsLoggedIn(false);
+    };
+    window.addEventListener('rabee-session-expired', handleExpiredSession);
+    return () => window.removeEventListener('rabee-session-expired', handleExpiredSession);
+  }, [setCurrentUser]);
 
   // If user logs out
   if (!isLoggedIn || !currentUser) {
@@ -46,6 +60,13 @@ function RabeeMainApp() {
   }
 
   const role = currentUser.role;
+
+  const handleLogout = () => {
+    ApiService.logout();
+    setCurrentUser(null);
+    setIsLoggedIn(false);
+    setActiveTab('home');
+  };
 
   // Handler to open rider profile page
   const handleSelectRiderProfile = (riderId: string) => {
@@ -128,6 +149,7 @@ function RabeeMainApp() {
         );
 
       case 'returns':
+      case 'history':
         return (
           <ReturnHistory
             onOpenRecordReturn={() => setIsRecordReturnOpen(true)}
@@ -151,7 +173,7 @@ function RabeeMainApp() {
       case 'profile':
         return (
           <ProfilePage
-            onLogout={() => setIsLoggedIn(false)}
+            onLogout={handleLogout}
           />
         );
 
@@ -174,6 +196,10 @@ function RabeeMainApp() {
       <DesktopSidebar
         activeTab={activeTab}
         onSelectTab={tab => {
+          if (tab === 'returns' && role === 'rider') {
+            setIsRecordReturnOpen(true);
+            return;
+          }
           setSelectedRiderId(null);
           setIsAddRecordsOpen(false);
           setIsRecordReturnOpen(false);
@@ -182,17 +208,27 @@ function RabeeMainApp() {
         onOpenAddRecords={() => setIsAddRecordsOpen(true)}
         onOpenRecordReturn={() => setIsRecordReturnOpen(true)}
         onOpenExport={() => setIsExportModalOpen(true)}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 md:pl-64">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile Header (sticky top) */}
         <MobileHeader
           onOpenProfile={() => setActiveTab('profile')}
         />
 
         {/* Dynamic Page Container */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className={`flex-1 w-full p-4 sm:p-6 lg:p-8 ${role === 'manager' ? 'max-w-none' : 'max-w-7xl mx-auto'}`}>
+          {selectedDate !== getLocalDateString() && (
+            <div className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-3.5 text-amber-950" role="status">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+              <div>
+                <p className="text-sm font-bold">You are viewing a different operating date</p>
+                <p className="mt-0.5 text-xs font-medium text-amber-800">New records will be saved to {formatDate(selectedDate)}, not the current operating day.</p>
+              </div>
+            </div>
+          )}
           <AnimatePresence mode="wait">
             <motion.div
               key={`${activeTab}-${selectedRiderId || ''}-${isAddRecordsOpen ? 'add' : ''}-${isRecordReturnOpen ? 'ret' : ''}`}
@@ -210,6 +246,10 @@ function RabeeMainApp() {
         <BottomNavigation
           activeTab={activeTab}
           onSelectTab={tab => {
+            if (tab === 'returns' && role === 'rider') {
+              setIsRecordReturnOpen(true);
+              return;
+            }
             setSelectedRiderId(null);
             setIsAddRecordsOpen(false);
             setIsRecordReturnOpen(false);

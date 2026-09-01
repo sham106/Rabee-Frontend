@@ -43,7 +43,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
           'Rider Name': rider?.name || 'Unknown Rider',
           'Phone': rider?.phone || '',
           'Vehicle': rider?.vehicleType || 'Motorcycle',
-          'Hub': rider?.hub || 'Nairobi Central Sorting Hub',
+          'Hub': rider?.hub || 'Mauritius Operations Hub',
           'Allocated Parcels': alc.quantity,
           'Returns Recorded': returnCount,
           'Net Parcels Delivered': net,

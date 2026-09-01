@@ -42,7 +42,6 @@ export const RidersPage: React.FC<RidersPageProps> = ({ onSelectRider }) => {
   const [formUsername, setFormUsername] = useState('');
   const [formPassword, setFormPassword] = useState('rabee123');
   const [formStatus, setFormStatus] = useState<RiderStatus>('active');
-  const [formVehicle, setFormVehicle] = useState<'Motorcycle' | 'Van' | 'TukTuk'>('Motorcycle');
   const [showPassword, setShowPassword] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -92,7 +91,6 @@ export const RidersPage: React.FC<RidersPageProps> = ({ onSelectRider }) => {
     setFormUsername(suggested);
     setFormPassword('rabee123');
     setFormStatus('active');
-    setFormVehicle('Motorcycle');
     setUsernameError(null);
     setShowPassword(false);
     setIsAddModalOpen(true);
@@ -151,6 +149,15 @@ export const RidersPage: React.FC<RidersPageProps> = ({ onSelectRider }) => {
       return;
     }
 
+    if (formPassword.trim().length < 6) {
+      showToast({
+        type: 'error',
+        title: 'Password Too Short',
+        message: 'The rider password must contain at least 6 characters.',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await addRider({
@@ -158,8 +165,7 @@ export const RidersPage: React.FC<RidersPageProps> = ({ onSelectRider }) => {
         username: cleanUsername,
         password: formPassword.trim(),
         status: formStatus,
-        vehicleType: formVehicle,
-        hub: 'Nairobi Central Sorting Hub',
+        hub: 'Mauritius Operations Hub',
       });
       setIsSubmitting(false);
       setIsAddModalOpen(false);
@@ -196,6 +202,10 @@ export const RidersPage: React.FC<RidersPageProps> = ({ onSelectRider }) => {
     if (!resettingRider) return;
     if (!newPassword.trim()) {
       setResetError('Please enter a new password.');
+      return;
+    }
+    if (newPassword.trim().length < 6) {
+      setResetError('The rider password must contain at least 6 characters.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -437,8 +447,8 @@ export const RidersPage: React.FC<RidersPageProps> = ({ onSelectRider }) => {
             </p>
           </div>
 
-          {/* Account Status and Vehicle Type */}
-          <div className="grid grid-cols-2 gap-3 pt-1">
+          {/* Account Status */}
+          <div className="pt-1">
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
                 Account Status
@@ -450,21 +460,6 @@ export const RidersPage: React.FC<RidersPageProps> = ({ onSelectRider }) => {
               >
                 <option value="active">Active (Can receive parcels)</option>
                 <option value="inactive">Inactive</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
-                Vehicle Type
-              </label>
-              <select
-                value={formVehicle}
-                onChange={e => setFormVehicle(e.target.value as any)}
-                className="w-full rounded-2xl bg-white border border-slate-200 px-3.5 py-3 text-xs font-bold text-slate-900 outline-none focus:border-amber-500 shadow-xs cursor-pointer"
-              >
-                <option value="Motorcycle">Motorcycle</option>
-                <option value="Van">Van / Cargo</option>
-                <option value="TukTuk">TukTuk</option>
               </select>
             </div>
           </div>

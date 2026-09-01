@@ -7,7 +7,7 @@ export const SuccessToast: React.FC = () => {
   const { toasts, dismissToast } = useApp();
 
   return (
-    <div className="fixed top-4 left-0 right-0 z-50 pointer-events-none flex flex-col items-center gap-2 px-4">
+    <div className="fixed top-4 left-0 right-0 z-50 pointer-events-none flex flex-col items-center gap-2 px-4" role="region" aria-label="Notifications" aria-live="polite">
       <AnimatePresence>
         {toasts.map(toast => {
           const icon = {

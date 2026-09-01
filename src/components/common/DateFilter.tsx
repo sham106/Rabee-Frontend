@@ -20,7 +20,6 @@ export const DateFilter: React.FC<DateFilterProps> = ({
     { key: 'yesterday', label: 'Yesterday' },
     { key: 'week', label: 'This Week' },
     { key: 'month', label: 'This Month' },
-    { key: 'custom', label: 'Custom' },
   ];
 
   return (
@@ -45,16 +44,22 @@ export const DateFilter: React.FC<DateFilterProps> = ({
         })}
       </div>
 
-      {activeRange === 'custom' && (
-        <div className="flex items-center gap-2 rounded-2xl bg-white border border-slate-200 px-3 py-1.5 text-xs shadow-xs">
+      {onCustomDateChange && (
+        <label className={`flex items-center gap-2 rounded-2xl border px-3 py-1.5 text-xs shadow-xs transition-colors ${
+          activeRange === 'custom' ? 'border-amber-400 bg-amber-50' : 'border-slate-200 bg-white'
+        }`}>
           <Calendar className="h-4 w-4 text-amber-600" />
+          <span className="whitespace-nowrap font-bold text-slate-500">Select day</span>
           <input
             type="date"
             value={customDate || ''}
-            onChange={e => onCustomDateChange && onCustomDateChange(e.target.value)}
+            onChange={e => {
+              onCustomDateChange(e.target.value);
+              if (e.target.value) onRangeChange('custom');
+            }}
             className="bg-transparent text-slate-800 font-semibold outline-none cursor-pointer"
           />
-        </div>
+        </label>
       )}
     </div>
   );

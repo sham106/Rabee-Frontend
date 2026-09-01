@@ -95,4 +95,4 @@ export interface RiderDaySummary {
 
 export type DateFilterRange = 'today' | 'yesterday' | 'week' | 'month' | 'custom';
 
-export type NavTab = 'home' | 'records' | 'returns' | 'riders' | 'reports' | 'profile';
+export type NavTab = 'home' | 'records' | 'returns' | 'history' | 'riders' | 'reports' | 'profile';

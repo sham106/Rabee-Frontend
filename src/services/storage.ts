@@ -5,13 +5,6 @@ import {
   ParcelReturn,
   User,
 } from '../types';
-import {
-  INITIAL_RIDERS,
-  INITIAL_INTAKES,
-  INITIAL_ALLOCATIONS,
-  INITIAL_RETURNS,
-  INITIAL_USERS,
-} from '../data/mockData';
 
 const STORAGE_KEYS = {
   USERS: 'rabee_users_v1',
@@ -45,39 +38,35 @@ function setItem<T>(key: string, value: T): void {
 }
 
 export const StorageService = {
-  getUsers: (): User[] => getItem(STORAGE_KEYS.USERS, INITIAL_USERS),
+  getUsers: (): User[] => getItem(STORAGE_KEYS.USERS, []),
   setUsers: (users: User[]) => setItem(STORAGE_KEYS.USERS, users),
 
-  getCurrentUser: (): User => getItem(STORAGE_KEYS.CURRENT_USER, INITIAL_USERS[0]),
-  setCurrentUser: (user: User) => setItem(STORAGE_KEYS.CURRENT_USER, user),
+  getCurrentUser: (): User | null => getItem<User | null>(STORAGE_KEYS.CURRENT_USER, null),
+  setCurrentUser: (user: User | null) => {
+    if (user) setItem(STORAGE_KEYS.CURRENT_USER, user);
+    else localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+  },
 
   getRiders: (): Rider[] => {
-    const rawRiders = getItem(STORAGE_KEYS.RIDERS, INITIAL_RIDERS);
-    // Ensure every rider has a valid username & password
-    const sanitized = rawRiders.map((r, idx) => ({
-      ...r,
-      username: r.username || `rabee${idx + 1}`,
-      password: r.password || 'password123',
-    }));
-    return sanitized;
+    return getItem<Rider[]>(STORAGE_KEYS.RIDERS, []);
   },
   setRiders: (riders: Rider[]) => setItem(STORAGE_KEYS.RIDERS, riders),
 
-  getIntakes: (): DailyIntake[] => getItem(STORAGE_KEYS.INTAKES, INITIAL_INTAKES),
+  getIntakes: (): DailyIntake[] => getItem(STORAGE_KEYS.INTAKES, []),
   setIntakes: (intakes: DailyIntake[]) => setItem(STORAGE_KEYS.INTAKES, intakes),
 
-  getAllocations: (): Allocation[] => getItem(STORAGE_KEYS.ALLOCATIONS, INITIAL_ALLOCATIONS),
+  getAllocations: (): Allocation[] => getItem(STORAGE_KEYS.ALLOCATIONS, []),
   setAllocations: (allocations: Allocation[]) => setItem(STORAGE_KEYS.ALLOCATIONS, allocations),
 
-  getReturns: (): ParcelReturn[] => getItem(STORAGE_KEYS.RETURNS, INITIAL_RETURNS),
+  getReturns: (): ParcelReturn[] => getItem(STORAGE_KEYS.RETURNS, []),
   setReturns: (returns: ParcelReturn[]) => setItem(STORAGE_KEYS.RETURNS, returns),
 
-  resetToDefaults: () => {
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(INITIAL_USERS));
-    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(INITIAL_USERS[0]));
-    localStorage.setItem(STORAGE_KEYS.RIDERS, JSON.stringify(INITIAL_RIDERS));
-    localStorage.setItem(STORAGE_KEYS.INTAKES, JSON.stringify(INITIAL_INTAKES));
-    localStorage.setItem(STORAGE_KEYS.ALLOCATIONS, JSON.stringify(INITIAL_ALLOCATIONS));
-    localStorage.setItem(STORAGE_KEYS.RETURNS, JSON.stringify(INITIAL_RETURNS));
+  clearOperationalCache: () => {
+    localStorage.removeItem(STORAGE_KEYS.USERS);
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+    localStorage.removeItem(STORAGE_KEYS.RIDERS);
+    localStorage.removeItem(STORAGE_KEYS.INTAKES);
+    localStorage.removeItem(STORAGE_KEYS.ALLOCATIONS);
+    localStorage.removeItem(STORAGE_KEYS.RETURNS);
   },
 };

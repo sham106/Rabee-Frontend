@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import {
   User,
-  UserRole,
   Rider,
   DailyIntake,
   Allocation,
@@ -11,7 +10,7 @@ import {
 } from '../types';
 import { StorageService } from '../services/storage';
 import { ApiService } from '../services/api';
-import { TODAY_DATE } from '../data/mockData';
+import { getLocalDateString } from '../utils/dates';
 
 export interface ToastMessage {
   id: string;
@@ -23,8 +22,6 @@ export interface ToastMessage {
 interface AppContextType {
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
-  switchRole: (role: UserRole, riderId?: string) => void;
-  allUsers: User[];
 
   selectedDate: string;
   setSelectedDate: (date: string) => void;
@@ -60,7 +57,6 @@ interface AppContextType {
   // Helpers
   checkDuplicateBarcode: (barcode: string, riderId: string, date: string) => boolean;
   getRiderById: (riderId: string) => Rider | undefined;
-  resetAllData: () => void;
 
   // Feedback/Toasts
   toasts: ToastMessage[];
@@ -72,13 +68,54 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUserState] = useState<User | null>(() => StorageService.getCurrentUser());
-  const [allUsers, setAllUsers] = useState<User[]>(() => StorageService.getUsers());
-  const [riders, setRiders] = useState<Rider[]>(() => StorageService.getRiders());
-  const [intakes, setIntakes] = useState<DailyIntake[]>(() => StorageService.getIntakes());
-  const [allocations, setAllocations] = useState<Allocation[]>(() => StorageService.getAllocations());
-  const [returns, setReturns] = useState<ParcelReturn[]>(() => StorageService.getReturns());
-  const [selectedDate, setSelectedDate] = useState<string>(TODAY_DATE);
+  const [riders, setRiders] = useState<Rider[]>([]);
+  const [intakes, setIntakes] = useState<DailyIntake[]>([]);
+  const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [returns, setReturns] = useState<ParcelReturn[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string>(() => getLocalDateString());
+  const [currentDate, setCurrentDate] = useState<string>(() => getLocalDateString());
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Follow the local operating day automatically, including when the app stays open past midnight.
+  useEffect(() => {
+    let previousToday = getLocalDateString();
+    const syncOperatingDay = () => {
+      const nextToday = getLocalDateString();
+      if (nextToday === previousToday) return;
+      setSelectedDate(selected => selected === previousToday ? nextToday : selected);
+      setCurrentDate(nextToday);
+      previousToday = nextToday;
+    };
+    document.addEventListener('visibilitychange', syncOperatingDay);
+    const interval = window.setInterval(syncOperatingDay, 60_000);
+    return () => {
+      document.removeEventListener('visibilitychange', syncOperatingDay);
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  // Hydrate operational data from the Python API after a successful login.
+  useEffect(() => {
+    if (!currentUser || !ApiService.hasSession()) return;
+    let cancelled = false;
+    Promise.all([
+      ApiService.getRiders(),
+      ApiService.getIntakes(),
+      ApiService.getAllocations(),
+      ApiService.getReturns(),
+    ]).then(([nextRiders, nextIntakes, nextAllocations, nextReturns]) => {
+      if (cancelled) return;
+      setRiders(nextRiders);
+      setIntakes(nextIntakes);
+      setAllocations(nextAllocations);
+      setReturns(nextReturns);
+    }).catch(error => {
+      if (!cancelled) {
+        showToast({ type: 'error', title: 'Unable to load operations data', message: error?.message || 'Check the backend connection.' });
+      }
+    });
+    return () => { cancelled = true; };
+  }, [currentUser]);
 
   // Update storage whenever state changes
   useEffect(() => {
@@ -112,28 +149,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const setCurrentUser = (user: User | null) => {
     setCurrentUserState(user);
-    if (user) {
-      StorageService.setCurrentUser(user);
-    }
-  };
-
-  const switchRole = (role: UserRole, riderId?: string) => {
-    const user = allUsers.find(u => u.role === role);
-    if (user) {
-      const updatedUser = riderId ? { ...user, rider_id: riderId } : user;
-      setCurrentUser(updatedUser);
-      showToast({
-        type: 'info',
-        title: `Switched to ${role.toUpperCase()} mode`,
-        message: `Active user: ${updatedUser.name}`,
-      });
-    }
+    StorageService.setCurrentUser(user);
   };
 
   // Computations
   const todaySummary = useMemo(() => {
-    return ApiService.calculateDailySummary(TODAY_DATE, intakes, allocations, returns, riders);
-  }, [intakes, allocations, returns, riders]);
+    return ApiService.calculateDailySummary(currentDate, intakes, allocations, returns, riders);
+  }, [currentDate, intakes, allocations, returns, riders]);
 
   const selectedDateSummary = useMemo(() => {
     return ApiService.calculateDailySummary(selectedDate, intakes, allocations, returns, riders);
@@ -292,27 +314,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return riders.find(r => r.id === riderId);
   };
 
-  const resetAllData = () => {
-    StorageService.resetToDefaults();
-    setRiders(StorageService.getRiders());
-    setIntakes(StorageService.getIntakes());
-    setAllocations(StorageService.getAllocations());
-    setReturns(StorageService.getReturns());
-    setCurrentUser(StorageService.getCurrentUser());
-    showToast({
-      type: 'info',
-      title: 'Demo Data Reset',
-      message: 'All default records have been restored.',
-    });
-  };
-
   return (
     <AppContext.Provider
       value={{
         currentUser,
         setCurrentUser,
-        switchRole,
-        allUsers,
         selectedDate,
         setSelectedDate,
         riders,
@@ -329,9 +335,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         deleteParcelReturn,
         addRider,
         updateRider,
+        resetRiderPassword,
         checkDuplicateBarcode,
         getRiderById,
-        resetAllData,
         toasts,
         showToast,
         dismissToast,

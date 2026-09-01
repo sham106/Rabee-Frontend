@@ -88,8 +88,9 @@ export const ReturnCard: React.FC<ReturnCardProps> = ({
             <button
               type="button"
               onClick={() => onDelete(item.id)}
-              className="opacity-0 group-hover:opacity-100 rounded-xl p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all cursor-pointer"
+              className="rounded-xl p-2.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all cursor-pointer sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
               title="Delete return record"
+              aria-label={`Delete return ${item.barcode}`}
             >
               <Trash2 className="h-4 w-4" />
             </button>

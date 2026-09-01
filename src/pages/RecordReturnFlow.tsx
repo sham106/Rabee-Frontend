@@ -5,6 +5,7 @@ import { PrimaryButton } from '../components/common/PrimaryButton';
 import { SecondaryButton } from '../components/common/SecondaryButton';
 import { FormField } from '../components/common/FormField';
 import { BarcodeScannerModal } from '../components/common/BarcodeScannerModal';
+import { Modal } from '../components/common/Modal';
 import { formatDate } from '../utils/formatters';
 import {
   Camera,
@@ -37,6 +38,7 @@ export const RecordReturnFlow: React.FC<RecordReturnFlowProps> = ({ onBackToToda
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+  const [isDuplicateConfirmOpen, setIsDuplicateConfirmOpen] = useState(false);
 
   const reasonsList: { reason: ReturnReason; desc: string }[] = [
     { reason: 'Customer Unavailable', desc: 'No one at premise / locked gate' },
@@ -77,6 +79,18 @@ export const RecordReturnFlow: React.FC<RecordReturnFlowProps> = ({ onBackToToda
     }
   };
 
+  const saveReturn = async () => {
+    setIsDuplicateConfirmOpen(false);
+    setIsSubmitting(true);
+    try {
+      await recordParcelReturn(riderId, barcode, selectedReason, notes, selectedDate);
+      setIsSubmitting(false);
+      setCurrentStep('success');
+    } catch (e) {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmitReturn = async () => {
     if (!barcode.trim()) {
       showToast({
@@ -88,20 +102,10 @@ export const RecordReturnFlow: React.FC<RecordReturnFlowProps> = ({ onBackToToda
     }
 
     if (duplicateWarning) {
-      const confirmOverride = window.confirm(
-        `Warning: Barcode ${barcode} is already recorded today. Do you wish to override?`
-      );
-      if (!confirmOverride) return;
+      setIsDuplicateConfirmOpen(true);
+      return;
     }
-
-    setIsSubmitting(true);
-    try {
-      await recordParcelReturn(riderId, barcode, selectedReason, notes, selectedDate);
-      setIsSubmitting(false);
-      setCurrentStep('success');
-    } catch (e) {
-      setIsSubmitting(false);
-    }
+    await saveReturn();
   };
 
   const handleRecordAnother = () => {
@@ -286,6 +290,8 @@ export const RecordReturnFlow: React.FC<RecordReturnFlowProps> = ({ onBackToToda
                           ? 'bg-amber-50 border-amber-400 text-slate-900 ring-1 ring-amber-400'
                           : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300'
                       }`}
+                      role="radio"
+                      aria-checked={isSelected}
                     >
                       <div>
                         <p className={`text-xs font-bold ${isSelected ? 'text-amber-900' : 'text-slate-900'}`}>
@@ -398,6 +404,19 @@ export const RecordReturnFlow: React.FC<RecordReturnFlowProps> = ({ onBackToToda
           setCurrentStep('form');
         }}
       />
+
+      <Modal
+        isOpen={isDuplicateConfirmOpen}
+        onClose={() => setIsDuplicateConfirmOpen(false)}
+        title="Barcode already recorded"
+        subtitle={`${barcode} already appears in your returns for ${formatDate(selectedDate)}.`}
+        maxWidth="sm"
+      >
+        <div className="space-y-4 pt-2">
+          <p className="text-sm leading-relaxed text-slate-600">To protect the daily audit from duplicate records, check the barcode and enter a different parcel.</p>
+          <SecondaryButton size="md" onClick={() => setIsDuplicateConfirmOpen(false)}>Review barcode</SecondaryButton>
+        </div>
+      </Modal>
     </div>
   );
 };

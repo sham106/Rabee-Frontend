@@ -6,7 +6,7 @@ import { SecondaryButton } from '../components/common/SecondaryButton';
 import { DateFilter } from '../components/common/DateFilter';
 import { DateFilterRange } from '../types';
 import { formatDate } from '../utils/formatters';
-import { TODAY_DATE, YESTERDAY_DATE } from '../data/mockData';
+import { getDateDaysAgo, getLocalDateString, getRecentDates } from '../utils/dates';
 import {
   BarChart3,
   Download,
@@ -21,6 +21,11 @@ import {
   FileSpreadsheet,
   PieChart,
   ShieldCheck,
+  AlertTriangle,
+  UserX,
+  ChevronRight,
+  X,
+  CircleCheck,
 } from 'lucide-react';
 
 interface ManagementDashboardProps {
@@ -35,17 +40,18 @@ export const ManagementDashboard: React.FC<ManagementDashboardProps> = ({
   const { riders, intakes, allocations, returns, selectedDate } = useApp();
 
   const [dateRange, setDateRange] = useState<DateFilterRange>('today');
-  const [customDate, setCustomDate] = useState<string>(TODAY_DATE);
+  const [customDate, setCustomDate] = useState<string>(() => getLocalDateString());
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<'name' | 'allocated' | 'returns' | 'net' | 'rate'>('allocated');
   const [sortAsc, setSortAsc] = useState(false);
+  const [riderFilter, setRiderFilter] = useState<'all' | 'attention' | 'unallocated'>('all');
 
   // Filter datasets by chosen date scope
   const { filteredIntakes, filteredAllocations, filteredReturns } = useMemo(() => {
     let targetDates: string[] = [];
-    if (dateRange === 'today') targetDates = [TODAY_DATE];
-    else if (dateRange === 'yesterday') targetDates = [YESTERDAY_DATE];
-    else if (dateRange === 'week') targetDates = [TODAY_DATE, YESTERDAY_DATE, '2026-08-28', '2026-08-27', '2026-08-26'];
+    if (dateRange === 'today') targetDates = [getLocalDateString()];
+    else if (dateRange === 'yesterday') targetDates = [getDateDaysAgo(1)];
+    else if (dateRange === 'week') targetDates = getRecentDates(7);
     else if (dateRange === 'month') targetDates = intakes.map(i => i.date);
     else if (dateRange === 'custom' && customDate) targetDates = [customDate];
 
@@ -97,11 +103,18 @@ export const ManagementDashboard: React.FC<ManagementDashboardProps> = ({
     const searched = rows.filter(
       row =>
         row.rider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        row.rider.phone.includes(searchQuery)
+        (row.rider.phone || '').includes(searchQuery) ||
+        row.rider.username.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const operationallyFiltered = searched.filter(row => {
+      if (riderFilter === 'attention') return row.rate > 5 || (row.rider.status === 'active' && row.allocatedQty === 0);
+      if (riderFilter === 'unallocated') return row.rider.status === 'active' && row.allocatedQty === 0;
+      return true;
+    });
+
     // Sorting
-    return searched.sort((a, b) => {
+    return operationallyFiltered.sort((a, b) => {
       let comparison = 0;
       if (sortField === 'name') comparison = a.rider.name.localeCompare(b.rider.name);
       else if (sortField === 'allocated') comparison = a.allocatedQty - b.allocatedQty;
@@ -111,7 +124,17 @@ export const ManagementDashboard: React.FC<ManagementDashboardProps> = ({
 
       return sortAsc ? comparison : -comparison;
     });
-  }, [riders, filteredAllocations, filteredReturns, searchQuery, sortField, sortAsc]);
+  }, [riders, filteredAllocations, filteredReturns, searchQuery, sortField, sortAsc, riderFilter]);
+
+  const highReturnRiders = riders.filter(rider => {
+    const allocated = filteredAllocations.filter(a => a.rider_id === rider.id).reduce((sum, a) => sum + a.quantity, 0);
+    const returned = filteredReturns.filter(r => r.rider_id === rider.id).length;
+    return allocated > 0 && (returned / allocated) * 100 > 5;
+  }).length;
+  const unallocatedRiders = riders.filter(rider =>
+    rider.status === 'active' && !filteredAllocations.some(a => a.rider_id === rider.id)
+  ).length;
+  const allocatedFleetCount = riders.filter(rider => filteredAllocations.some(a => a.rider_id === rider.id)).length;
 
   const handleSort = (field: typeof sortField) => {
     if (sortField === field) {
@@ -123,7 +146,7 @@ export const ManagementDashboard: React.FC<ManagementDashboardProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-20 max-w-7xl mx-auto">
+    <div className="space-y-6 pb-20 w-full">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -152,7 +175,7 @@ export const ManagementDashboard: React.FC<ManagementDashboardProps> = ({
       </div>
 
       {/* Date Filter Bar */}
-      <div className="rounded-3xl bg-white border border-slate-200 p-4 shadow-xs">
+      <div className="rounded-2xl bg-white border border-slate-200 p-3.5 shadow-xs lg:sticky lg:top-4 lg:z-20">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <DateFilter
             activeRange={dateRange}
@@ -167,13 +190,21 @@ export const ManagementDashboard: React.FC<ManagementDashboardProps> = ({
       </div>
 
       {/* Topline KPI Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard
           label="Total Intake"
           value={totalReceived}
           sublabel="Received cargo volume"
           variant="default"
           icon={<PackagePlus className="h-4 w-4" />}
+        />
+
+        <StatCard
+          label="Unallocated"
+          value={remaining}
+          sublabel={remaining < 0 ? `${Math.abs(remaining)} over capacity` : 'Still at the hub'}
+          variant={remaining < 0 ? 'rose' : 'default'}
+          icon={<Layers className="h-4 w-4" />}
         />
 
         <StatCard
@@ -209,7 +240,8 @@ export const ManagementDashboard: React.FC<ManagementDashboardProps> = ({
         />
       </div>
 
-      {/* Return Reasons Breakdown Card */}
+      {/* Desktop insight row */}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.8fr)]">
       <div className="rounded-3xl bg-white border border-slate-200 p-5 shadow-xs space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-2">
@@ -221,7 +253,7 @@ export const ManagementDashboard: React.FC<ManagementDashboardProps> = ({
         {totalReturns === 0 ? (
           <p className="text-xs text-slate-400 italic py-2">No returns for selected range.</p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2.5">
             {Object.entries(returnReasonCounts).map(([reason, rawCount]) => {
               const count = Number(rawCount);
               const pct = totalReturns > 0 ? ((count / totalReturns) * 100).toFixed(0) : '0';
@@ -242,9 +274,35 @@ export const ManagementDashboard: React.FC<ManagementDashboardProps> = ({
         )}
       </div>
 
+      <aside className="rounded-3xl bg-slate-900 p-5 text-white shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-amber-400">Operations pulse</p>
+            <h3 className="mt-1 text-lg font-extrabold">Attention required</h3>
+          </div>
+          <AlertTriangle className="h-5 w-5 text-amber-400" />
+        </div>
+        <div className="mt-5 space-y-2.5">
+          <button type="button" onClick={() => setRiderFilter('attention')} className="flex w-full items-center justify-between rounded-2xl bg-white/8 p-3 text-left hover:bg-white/12">
+            <span className="flex items-center gap-3"><AlertTriangle className="h-4 w-4 text-rose-400" /><span className="text-sm font-semibold">High return rate</span></span>
+            <span className="flex items-center gap-2 text-sm font-black">{highReturnRiders}<ChevronRight className="h-4 w-4 text-slate-500" /></span>
+          </button>
+          <button type="button" onClick={() => setRiderFilter('unallocated')} className="flex w-full items-center justify-between rounded-2xl bg-white/8 p-3 text-left hover:bg-white/12">
+            <span className="flex items-center gap-3"><UserX className="h-4 w-4 text-amber-400" /><span className="text-sm font-semibold">Active without allocation</span></span>
+            <span className="flex items-center gap-2 text-sm font-black">{unallocatedRiders}<ChevronRight className="h-4 w-4 text-slate-500" /></span>
+          </button>
+          <div className="flex items-center justify-between rounded-2xl bg-emerald-500/10 p-3">
+            <span className="flex items-center gap-3"><CircleCheck className="h-4 w-4 text-emerald-400" /><span className="text-sm font-semibold">Fleet allocated</span></span>
+            <span className="text-sm font-black text-emerald-300">{allocatedFleetCount}/{activeRidersCount}</span>
+          </div>
+        </div>
+        <p className="mt-4 text-xs leading-relaxed text-slate-400">Select an issue to filter the rider reconciliation table below.</p>
+      </aside>
+      </div>
+
       {/* Rider Summary Table (Desktop) & Stacked Cards (Mobile) */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs">
+        <div className="flex flex-col gap-4 border-b border-slate-200 p-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h3 className="text-lg font-extrabold text-slate-900">
               Rider Summary & Reconciliation
@@ -254,22 +312,30 @@ export const ManagementDashboard: React.FC<ManagementDashboardProps> = ({
             </p>
           </div>
 
-          <div className="relative max-w-xs">
-            <Search className="absolute left-3.5 top-2.5 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex rounded-xl bg-slate-100 p-1" aria-label="Filter riders">
+              {(['all', 'attention', 'unallocated'] as const).map(filter => (
+                <button key={filter} type="button" onClick={() => setRiderFilter(filter)} className={`rounded-lg px-3 py-2 text-xs font-bold capitalize ${riderFilter === filter ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}>{filter}</button>
+              ))}
+            </div>
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search rider..."
-              className="w-full rounded-2xl bg-white border border-slate-200 pl-9 pr-4 py-2 text-xs font-medium text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500 shadow-xs"
+              placeholder="Search name, username or phone"
+              className="w-full rounded-xl bg-white border border-slate-200 pl-10 pr-10 py-3 text-sm font-medium text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500"
             />
+            {searchQuery && <button type="button" onClick={() => setSearchQuery('')} aria-label="Clear search" className="absolute right-2.5 top-2.5 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="h-4 w-4" /></button>}
+          </div>
           </div>
         </div>
 
         {/* Desktop Responsive Table */}
-        <div className="hidden md:block overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-xs">
+        <div className="hidden md:block max-h-[680px] overflow-auto">
           <table className="w-full text-left border-collapse">
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] uppercase tracking-wider font-bold text-slate-500">
                 <th
                   onClick={() => handleSort('name')}
@@ -323,7 +389,7 @@ export const ManagementDashboard: React.FC<ManagementDashboardProps> = ({
                 <tr
                   key={row.rider.id}
                   onClick={() => onSelectRider(row.rider.id)}
-                  className="hover:bg-slate-50 transition-colors cursor-pointer"
+                  className={`hover:bg-slate-50 transition-colors cursor-pointer ${row.rate > 5 ? 'bg-rose-50/20' : ''}`}
                 >
                   <td className="py-4 px-5">
                     <div className="flex items-center gap-3">
@@ -332,8 +398,8 @@ export const ManagementDashboard: React.FC<ManagementDashboardProps> = ({
                       </div>
                       <div>
                         <div className="font-bold text-slate-900">{row.rider.name}</div>
-                        <div className="text-[11px] font-mono text-slate-500">
-                          {row.rider.phone} • {row.rider.vehicleType || 'Motorcycle'}
+                        <div className="text-xs font-mono text-slate-500">
+                          @{row.rider.username}{row.rider.phone ? ` • ${row.rider.phone}` : ''}
                         </div>
                       </div>
                     </div>
@@ -348,6 +414,8 @@ export const ManagementDashboard: React.FC<ManagementDashboardProps> = ({
                     {row.net}
                   </td>
                   <td className="py-4 px-5 text-right">
+                    <div className="flex items-center justify-end gap-3">
+                    <div className="hidden w-20 overflow-hidden rounded-full bg-slate-100 xl:block"><div className={`h-1.5 rounded-full ${row.rate > 10 ? 'bg-rose-500' : row.rate > 5 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(row.rate, 100)}%` }} /></div>
                     <span
                       className={`inline-flex items-center rounded-xl px-2.5 py-1 text-xs font-mono font-bold ${
                         row.rate > 10
@@ -359,15 +427,18 @@ export const ManagementDashboard: React.FC<ManagementDashboardProps> = ({
                     >
                       {row.rate.toFixed(1)}%
                     </span>
+                    <ChevronRight className="h-4 w-4 text-slate-300" />
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {riderTableData.length === 0 && <div className="p-12 text-center"><Users className="mx-auto h-8 w-8 text-slate-300" /><p className="mt-3 text-sm font-bold text-slate-700">No riders match this view</p><button type="button" onClick={() => { setSearchQuery(''); setRiderFilter('all'); }} className="mt-2 text-sm font-bold text-amber-700 hover:text-amber-800">Clear filters</button></div>}
         </div>
 
         {/* Mobile Stacked Cards Layout */}
-        <div className="md:hidden space-y-2.5">
+        <div className="md:hidden space-y-2.5 p-4">
           {riderTableData.map(row => (
             <div
               key={row.rider.id}
@@ -381,7 +452,7 @@ export const ManagementDashboard: React.FC<ManagementDashboardProps> = ({
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">{row.rider.name}</h4>
-                    <p className="text-[11px] text-slate-500 font-mono">{row.rider.phone}</p>
+                    <p className="text-[11px] text-slate-500 font-mono">@{row.rider.username}{row.rider.phone ? ` • ${row.rider.phone}` : ''}</p>
                   </div>
                 </div>
                 <span

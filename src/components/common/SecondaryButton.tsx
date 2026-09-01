@@ -21,7 +21,7 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
     'relative inline-flex items-center justify-center font-medium rounded-2xl transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer';
 
   const sizeStyles = {
-    sm: 'px-3.5 py-1.5 text-xs gap-1.5 min-h-[36px]',
+    sm: 'px-3.5 py-1.5 text-xs gap-1.5 min-h-[44px]',
     md: 'px-4 py-2 text-sm gap-2 min-h-[44px]',
     lg: 'px-5 py-3 text-base gap-2.5 min-h-[50px]',
   }[size];

@@ -13,15 +13,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
-export type NavTab =
-  | 'home'
-  | 'records'
-  | 'riders'
-  | 'reports'
-  | 'profile'
-  | 'returns'
-  | 'history'
-  | 'analytics';
+import { NavTab } from '../../types';
 
 interface BottomNavigationProps {
   activeTab: NavTab;
@@ -53,13 +45,13 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     { id: 'home', label: 'Home', icon: Home },
     { id: 'records', label: 'Records', icon: ClipboardList },
     { id: 'riders', label: 'Riders', icon: Users },
-    { id: 'reports', label: 'Reports', icon: FileSpreadsheet },
+    { id: 'reports', label: 'Dashboard', icon: BarChart2 },
     { id: 'profile', label: 'Profile', icon: UserIcon },
   ];
 
   const riderNavItems: NavItem[] = [
     { id: 'home', label: 'Home', icon: Home },
-    { id: 'returns', label: 'Return', icon: RotateCcw },
+    { id: 'returns', label: 'Record', icon: RotateCcw },
     { id: 'history', label: 'History', icon: History },
     { id: 'profile', label: 'Profile', icon: UserIcon },
   ];
@@ -86,6 +78,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
               key={item.id}
               type="button"
               onClick={() => handleTabClick(item.id)}
+              aria-current={isActive ? 'page' : undefined}
+              aria-label={item.label}
               className="relative flex flex-1 flex-col items-center justify-center py-2 px-1 text-center transition-all cursor-pointer"
             >
               <div className="relative flex items-center justify-center">

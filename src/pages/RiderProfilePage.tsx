@@ -23,6 +23,8 @@ import {
   Clock,
   Calendar,
   History,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Rider, RiderStatus } from '../types';
 
@@ -59,10 +61,11 @@ export const RiderProfilePage: React.FC<RiderProfilePageProps> = ({
   const [editName, setEditName] = useState(rider?.name || '');
   const [editUsername, setEditUsername] = useState(rider?.username || '');
   const [editStatus, setEditStatus] = useState<RiderStatus>(rider?.status || 'active');
-  const [editVehicle, setEditVehicle] = useState(rider?.vehicleType || 'Motorcycle');
-  const [editPlate, setEditPlate] = useState(rider?.plateNumber || '');
   const [editUsernameError, setEditUsernameError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [ledgerMonth, setLedgerMonth] = useState(() => selectedDate.slice(0, 7));
+  const [rangeStart, setRangeStart] = useState(() => `${selectedDate.slice(0, 7)}-01`);
+  const [rangeEnd, setRangeEnd] = useState(() => selectedDate);
 
   // Reset Password States
   const [newPassword, setNewPassword] = useState('');
@@ -110,6 +113,68 @@ export const RiderProfilePage: React.FC<RiderProfilePageProps> = ({
       ? ((allTimeReturnCount / allTimeAllocated) * 100).toFixed(1) + '%'
       : '0.0%';
 
+  const monthlyLedger = (() => {
+    const allocationByDate = new Map<string, number>();
+    const returnsByDate = new Map<string, number>();
+
+    historicalAllocations
+      .filter(allocation => allocation.date.startsWith(`${ledgerMonth}-`))
+      .forEach(allocation => {
+        allocationByDate.set(
+          allocation.date,
+          (allocationByDate.get(allocation.date) || 0) + allocation.quantity
+        );
+      });
+
+    allTimeReturns
+      .filter(parcelReturn => parcelReturn.return_date.startsWith(`${ledgerMonth}-`))
+      .forEach(parcelReturn => {
+        returnsByDate.set(
+          parcelReturn.return_date,
+          (returnsByDate.get(parcelReturn.return_date) || 0) + 1
+        );
+      });
+
+    const dates = Array.from(new Set([...allocationByDate.keys(), ...returnsByDate.keys()])).sort().reverse();
+    const rows = dates.map(date => {
+      const allocated = allocationByDate.get(date) || 0;
+      const returned = returnsByDate.get(date) || 0;
+      return { date, allocated, returned, net: Math.max(0, allocated - returned) };
+    });
+
+    return {
+      rows,
+      allocated: rows.reduce((sum, row) => sum + row.allocated, 0),
+      returned: rows.reduce((sum, row) => sum + row.returned, 0),
+      net: rows.reduce((sum, row) => sum + row.net, 0),
+    };
+  })();
+
+  const ledgerMonthLabel = new Intl.DateTimeFormat('en-MU', {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(`${ledgerMonth}-01T12:00:00`));
+
+  const changeLedgerMonth = (offset: number) => {
+    const value = new Date(`${ledgerMonth}-01T12:00:00`);
+    value.setMonth(value.getMonth() + offset);
+    setLedgerMonth(`${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}`);
+  };
+
+  const rangeIsValid = Boolean(rangeStart && rangeEnd && rangeStart <= rangeEnd);
+  const dateRangeSummary = (() => {
+    if (!rangeIsValid) return { allocated: 0, returned: 0, net: 0, operatingDays: 0 };
+    const rangeAllocations = historicalAllocations.filter(item => item.date >= rangeStart && item.date <= rangeEnd);
+    const rangeReturns = allTimeReturns.filter(item => item.return_date >= rangeStart && item.return_date <= rangeEnd);
+    const allocated = rangeAllocations.reduce((sum, item) => sum + item.quantity, 0);
+    const returned = rangeReturns.length;
+    const operatingDates = new Set([
+      ...rangeAllocations.map(item => item.date),
+      ...rangeReturns.map(item => item.return_date),
+    ]);
+    return { allocated, returned, net: Math.max(0, allocated - returned), operatingDays: operatingDates.size };
+  })();
+
   const isActive = rider.status === 'active';
 
   // Open Edit Modal with current values
@@ -117,8 +182,6 @@ export const RiderProfilePage: React.FC<RiderProfilePageProps> = ({
     setEditName(rider.name);
     setEditUsername(rider.username || '');
     setEditStatus(rider.status);
-    setEditVehicle(rider.vehicleType || 'Motorcycle');
-    setEditPlate(rider.plateNumber || '');
     setEditUsernameError(null);
     setIsEditModalOpen(true);
   };
@@ -170,8 +233,6 @@ export const RiderProfilePage: React.FC<RiderProfilePageProps> = ({
         name: cleanName,
         username: cleanUsername,
         status: editStatus,
-        vehicleType: editVehicle as any,
-        plateNumber: editPlate.trim() || undefined,
       });
       setIsUpdating(false);
       setIsEditModalOpen(false);
@@ -186,6 +247,10 @@ export const RiderProfilePage: React.FC<RiderProfilePageProps> = ({
     e.preventDefault();
     if (!newPassword.trim()) {
       setResetError('Please enter a new password.');
+      return;
+    }
+    if (newPassword.trim().length < 6) {
+      setResetError('The rider password must contain at least 6 characters.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -299,11 +364,6 @@ export const RiderProfilePage: React.FC<RiderProfilePageProps> = ({
                   @{rider.username || 'username'}
                 </span>
                 <span className="text-slate-300">•</span>
-                <span className="text-slate-500">
-                  {rider.vehicleType || 'Motorcycle'}{' '}
-                  {rider.plateNumber && `(${rider.plateNumber})`}
-                </span>
-                <span className="text-slate-300">•</span>
                 <span className="text-slate-400 text-[11px]">
                   Registered {formatDate(rider.joinedDate)}
                 </span>
@@ -399,6 +459,105 @@ export const RiderProfilePage: React.FC<RiderProfilePageProps> = ({
           />
         </div>
       </div>
+
+      {/* Custom inclusive date-range totals */}
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xs">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-base font-extrabold text-slate-900">
+              <History className="h-4 w-4 text-amber-600" />
+              Custom Period Totals
+            </h2>
+            <p className="mt-0.5 text-xs font-medium text-slate-500">
+              Calculate {rider.name}&apos;s activity between two dates, including both selected days.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-end">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              From
+              <input type="date" value={rangeStart} onChange={event => setRangeStart(event.target.value)} className="mt-1 block w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-amber-500" />
+            </label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              To
+              <input type="date" value={rangeEnd} onChange={event => setRangeEnd(event.target.value)} className="mt-1 block w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-amber-500" />
+            </label>
+          </div>
+        </div>
+
+        {!rangeIsValid ? (
+          <div className="mt-4 flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700">
+            <AlertCircle className="h-4 w-4" /> The “From” date must be before or equal to the “To” date.
+          </div>
+        ) : (
+          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="rounded-2xl bg-amber-50 p-3.5"><p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">Total assigned</p><p className="mt-1 text-2xl font-black text-slate-900">{dateRangeSummary.allocated}</p></div>
+            <div className="rounded-2xl bg-rose-50 p-3.5"><p className="text-[10px] font-bold uppercase tracking-wider text-rose-700">Total returns</p><p className="mt-1 text-2xl font-black text-slate-900">{dateRangeSummary.returned}</p></div>
+            <div className="rounded-2xl bg-emerald-50 p-3.5"><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Net parcels</p><p className="mt-1 text-2xl font-black text-slate-900">{dateRangeSummary.net}</p></div>
+            <div className="rounded-2xl bg-slate-50 p-3.5"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Operating days</p><p className="mt-1 text-2xl font-black text-slate-900">{dateRangeSummary.operatingDays}</p></div>
+          </div>
+        )}
+      </section>
+
+      {/* Monthly allocation and returns ledger */}
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs">
+        <div className="flex flex-col gap-4 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-base font-extrabold text-slate-900">
+              <Calendar className="h-4 w-4 text-amber-600" />
+              Monthly Assignment Ledger
+            </h2>
+            <p className="mt-0.5 text-xs font-medium text-slate-500">
+              Daily parcels assigned, returned, and reconciled for {rider.name}.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => changeLedgerMonth(-1)} aria-label="Previous month" className="rounded-xl border border-slate-200 p-2 text-slate-600 hover:bg-slate-50">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <input
+              type="month"
+              value={ledgerMonth}
+              onChange={event => event.target.value && setLedgerMonth(event.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-amber-500"
+              aria-label="Ledger month"
+            />
+            <button type="button" onClick={() => changeLedgerMonth(1)} aria-label="Next month" className="rounded-xl border border-slate-200 p-2 text-slate-600 hover:bg-slate-50">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-px bg-slate-200">
+          <div className="bg-amber-50 p-4 text-center"><p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">Assigned</p><p className="mt-1 text-2xl font-black text-slate-900">{monthlyLedger.allocated}</p></div>
+          <div className="bg-rose-50 p-4 text-center"><p className="text-[10px] font-bold uppercase tracking-wider text-rose-700">Returns</p><p className="mt-1 text-2xl font-black text-slate-900">{monthlyLedger.returned}</p></div>
+          <div className="bg-emerald-50 p-4 text-center"><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Net</p><p className="mt-1 text-2xl font-black text-slate-900">{monthlyLedger.net}</p></div>
+        </div>
+
+        {monthlyLedger.rows.length === 0 ? (
+          <div className="p-10 text-center">
+            <p className="text-sm font-bold text-slate-700">No activity in {ledgerMonthLabel}</p>
+            <p className="mt-1 text-xs text-slate-400">Assignments and returns will appear here automatically.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <tr><th className="px-5 py-3">Operating day</th><th className="px-4 py-3 text-right">Assigned</th><th className="px-4 py-3 text-right">Returns</th><th className="px-5 py-3 text-right">Net</th></tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {monthlyLedger.rows.map(row => (
+                  <tr key={row.date} className="hover:bg-slate-50">
+                    <td className="px-5 py-3.5 font-bold text-slate-800">{formatDate(row.date)}</td>
+                    <td className="px-4 py-3.5 text-right font-black text-amber-700">{row.allocated}</td>
+                    <td className="px-4 py-3.5 text-right font-black text-rose-600">{row.returned}</td>
+                    <td className="px-5 py-3.5 text-right font-black text-emerald-700">{row.net}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {/* Historical All-Time Statistics */}
       <div className="rounded-3xl bg-white border border-slate-200 p-5 shadow-xs">
@@ -529,8 +688,8 @@ export const RiderProfilePage: React.FC<RiderProfilePageProps> = ({
             )}
           </div>
 
-          {/* Account Status & Vehicle */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Account Status */}
+          <div>
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
                 Account Status
@@ -544,30 +703,7 @@ export const RiderProfilePage: React.FC<RiderProfilePageProps> = ({
                 <option value="inactive">Inactive</option>
               </select>
             </div>
-
-            <div>
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
-                Vehicle Type
-              </label>
-              <select
-                value={editVehicle}
-                onChange={e => setEditVehicle(e.target.value as any)}
-                className="w-full rounded-2xl bg-white border border-slate-200 px-3.5 py-3 text-xs font-bold text-slate-900 outline-none focus:border-amber-500 shadow-xs cursor-pointer"
-              >
-                <option value="Motorcycle">Motorcycle</option>
-                <option value="Van">Van / Cargo</option>
-                <option value="TukTuk">TukTuk</option>
-              </select>
-            </div>
           </div>
-
-          <FormField
-            id="edit-rider-plate"
-            label="Vehicle Plate Number (Optional)"
-            value={editPlate}
-            onChange={e => setEditPlate(e.target.value)}
-            placeholder="e.g. KDM 482A"
-          />
 
           <div className="flex items-center gap-3 pt-2">
             <SecondaryButton size="md" onClick={() => setIsEditModalOpen(false)}>

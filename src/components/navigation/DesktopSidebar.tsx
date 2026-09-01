@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
-import { NavTab } from './BottomNavigation';
+import { NavTab } from '../../types';
 import {
   Home,
   ClipboardList,
@@ -10,13 +10,8 @@ import {
   RotateCcw,
   History,
   BarChart2,
-  PieChart,
-  ShieldCheck,
-  Bike,
-  BarChart3,
   Calendar,
   LogOut,
-  Sparkles,
 } from 'lucide-react';
 import { formatDate } from '../../utils/formatters';
 
@@ -27,6 +22,7 @@ interface DesktopSidebarProps {
   onOpenAddRecords?: () => void;
   onOpenRecordReturn?: () => void;
   onOpenExport?: () => void;
+  onLogout?: () => void;
 }
 
 export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
@@ -36,8 +32,9 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   onOpenAddRecords,
   onOpenRecordReturn,
   onOpenExport,
+  onLogout,
 }) => {
-  const { currentUser, switchRole, selectedDate, resetAllData } = useApp();
+  const { currentUser, selectedDate } = useApp();
   const role = currentUser?.role || 'admin';
   const handleTabClick = (tab: NavTab) => {
     if (onSelectTab) onSelectTab(tab);
@@ -55,7 +52,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
     { id: 'home', label: 'Operations Home', icon: Home },
     { id: 'records', label: "Today's Records", icon: ClipboardList },
     { id: 'riders', label: 'Rider Roster', icon: Users },
-    { id: 'reports', label: 'Reconciliation Reports', icon: FileSpreadsheet },
+    { id: 'reports', label: 'Management Dashboard', icon: BarChart2 },
     { id: 'profile', label: 'Staff Profile', icon: UserIcon },
   ];
 
@@ -89,7 +86,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
               Rabee
             </span>
             <span className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
-              Parcel Operations
+              Delivery Courier
             </span>
           </div>
         </div>
@@ -104,7 +101,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
             {formatDate(selectedDate)}
           </div>
           <div className="text-[11px] text-slate-500 mt-0.5 truncate font-medium">
-            {currentUser?.hub || 'Nairobi Central Sorting Hub'}
+            {currentUser?.hub || 'Mauritius Operations Hub'}
           </div>
         </div>
 
@@ -122,6 +119,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
                 key={item.id}
                 type="button"
                 onClick={() => handleTabClick(item.id)}
+                aria-current={isActive ? 'page' : undefined}
                 className={`flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
                   isActive
                     ? 'bg-amber-500 text-slate-950 shadow-sm shadow-amber-500/20 font-bold'
@@ -161,7 +159,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
         )}
       </div>
 
-      {/* User profile & Role switcher card */}
+      {/* Authenticated user */}
       <div className="space-y-3 pt-4 border-t border-slate-200">
         <div className="flex items-center gap-3 rounded-2xl bg-slate-50 border border-slate-200/80 p-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800 font-bold border border-amber-200">
@@ -175,49 +173,16 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
             </p>
           </div>
         </div>
-
-        {/* Quick switch roles */}
-        <div className="grid grid-cols-3 gap-1.5">
+        {onLogout && (
           <button
             type="button"
-            onClick={() => switchRole('admin')}
-            title="Switch to Admin"
-            className={`flex flex-col items-center justify-center py-2 rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
-              role === 'admin'
-                ? 'bg-amber-500 text-slate-950 shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
-            }`}
+            onClick={onLogout}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-100"
           >
-            <ShieldCheck className="h-3.5 w-3.5 mb-0.5" />
-            Admin
+            <LogOut className="h-4 w-4" />
+            Log out
           </button>
-          <button
-            type="button"
-            onClick={() => switchRole('rider', 'rdr-1')}
-            title="Switch to Rider"
-            className={`flex flex-col items-center justify-center py-2 rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
-              role === 'rider'
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
-            }`}
-          >
-            <Bike className="h-3.5 w-3.5 mb-0.5" />
-            Rider
-          </button>
-          <button
-            type="button"
-            onClick={() => switchRole('manager')}
-            title="Switch to Manager"
-            className={`flex flex-col items-center justify-center py-2 rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
-              role === 'manager'
-                ? 'bg-sky-600 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
-            }`}
-          >
-            <BarChart3 className="h-3.5 w-3.5 mb-0.5" />
-            Manager
-          </button>
-        </div>
+        )}
       </div>
     </aside>
   );

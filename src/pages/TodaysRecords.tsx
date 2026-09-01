@@ -47,6 +47,7 @@ export const TodaysRecords: React.FC<TodaysRecordsProps> = ({
   const [editQty, setEditQty] = useState<number>(0);
   const [isUpdating, setIsUpdating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [allocationToDelete, setAllocationToDelete] = useState<Allocation | null>(null);
 
   // Today's allocations
   const todayAllocations = allocations.filter(a => a.date === selectedDate);
@@ -91,10 +92,10 @@ export const TodaysRecords: React.FC<TodaysRecordsProps> = ({
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to remove this rider allocation?')) {
-      await deleteAllocation(id);
-    }
+  const handleDelete = async () => {
+    if (!allocationToDelete) return;
+    await deleteAllocation(allocationToDelete.id);
+    setAllocationToDelete(null);
   };
 
   return (
@@ -274,9 +275,10 @@ export const TodaysRecords: React.FC<TodaysRecordsProps> = ({
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDelete(alc.id)}
+                          onClick={() => setAllocationToDelete(alc)}
                           className="p-2 text-slate-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition-colors cursor-pointer"
                           title="Delete Allocation"
+                          aria-label={`Delete allocation for ${rider?.name || 'rider'}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -345,6 +347,22 @@ export const TodaysRecords: React.FC<TodaysRecordsProps> = ({
           </div>
         </Modal>
       )}
+
+      <Modal
+        isOpen={Boolean(allocationToDelete)}
+        onClose={() => setAllocationToDelete(null)}
+        title="Remove this allocation?"
+        subtitle={`${riders.find(r => r.id === allocationToDelete?.rider_id)?.name || 'This rider'} will no longer have this allocation for ${formatDate(selectedDate)}.`}
+        maxWidth="sm"
+      >
+        <div className="space-y-4 pt-2">
+          <p className="text-sm text-slate-600">This removes <strong className="text-slate-900">{allocationToDelete?.quantity || 0} assigned parcels</strong> from the daily reconciliation.</p>
+          <div className="flex gap-3">
+            <SecondaryButton size="md" onClick={() => setAllocationToDelete(null)}>Keep allocation</SecondaryButton>
+            <PrimaryButton size="md" variant="danger" onClick={handleDelete}>Remove allocation</PrimaryButton>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

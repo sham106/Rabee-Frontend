@@ -4,7 +4,7 @@ import { ReturnCard } from '../components/cards/ReturnCard';
 import { DateFilter } from '../components/common/DateFilter';
 import { PrimaryButton } from '../components/common/PrimaryButton';
 import { DateFilterRange, ReturnReason } from '../types';
-import { TODAY_DATE, YESTERDAY_DATE } from '../data/mockData';
+import { getDateDaysAgo, getLocalDateString } from '../utils/dates';
 import { formatDate } from '../utils/formatters';
 import { RotateCcw, Search, Filter, Calendar } from 'lucide-react';
 
@@ -18,7 +18,7 @@ export const ReturnHistory: React.FC<ReturnHistoryProps> = ({ onOpenRecordReturn
   const riderId = currentUser?.rider_id || 'rdr-1';
 
   const [dateRange, setDateRange] = useState<DateFilterRange>('today');
-  const [customDate, setCustomDate] = useState<string>(TODAY_DATE);
+  const [customDate, setCustomDate] = useState<string>(() => getLocalDateString());
   const [selectedReason, setSelectedReason] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -30,10 +30,10 @@ export const ReturnHistory: React.FC<ReturnHistoryProps> = ({ onOpenRecordReturn
       }
 
       // Date range filtering
-      if (dateRange === 'today' && ret.return_date !== TODAY_DATE) {
+      if (dateRange === 'today' && ret.return_date !== getLocalDateString()) {
         return false;
       }
-      if (dateRange === 'yesterday' && ret.return_date !== YESTERDAY_DATE) {
+      if (dateRange === 'yesterday' && ret.return_date !== getDateDaysAgo(1)) {
         return false;
       }
       if (dateRange === 'custom' && customDate && ret.return_date !== customDate) {

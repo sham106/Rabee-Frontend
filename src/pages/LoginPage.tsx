@@ -1,251 +1,98 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { UserRole } from '../types';
 import { PrimaryButton } from '../components/common/PrimaryButton';
 import { FormField } from '../components/common/FormField';
 import { ApiService } from '../services/api';
-import { Lock, User as UserIcon, ShieldCheck, Bike, BarChart3, ArrowRight, Sparkles, AlertCircle } from 'lucide-react';
+import { ArrowRight, Bike, Eye, EyeOff, Lock, PackageCheck, RotateCcw, ShieldCheck, User as UserIcon, Users } from 'lucide-react';
 import { motion } from 'motion/react';
 
-interface LoginPageProps {
-  onSuccess: () => void;
-}
+interface LoginPageProps { onSuccess: () => void; }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
-  const { allUsers, riders, setCurrentUser, showToast } = useApp();
-  const [identifier, setIdentifier] = useState('peter.kamau@rabee.io');
-  const [password, setPassword] = useState('rabee2026!');
+  const { setCurrentUser, showToast } = useApp();
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const cleanId = identifier.trim();
-    if (!cleanId) {
-      setError('Please enter your username or email address.');
+  const handleLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!identifier.trim() || !password) {
+      setError('Enter your username or work email and password.');
       return;
     }
-
     setLoading(true);
     setError(null);
-
     try {
-      const result = await ApiService.login(cleanId, password);
-      if (result) {
-        setCurrentUser(result.user);
-        showToast({
-          type: 'success',
-          title: `Welcome back, ${result.user.name}`,
-          message: result.rider ? `Signed in as Rider (@${result.rider.username})` : `Signed in as ${result.user.role.toUpperCase()}`,
-        });
-        setLoading(false);
-        onSuccess();
-      } else {
-        setError('Account not found. For riders, enter your username (e.g. rabee1).');
-        setLoading(false);
+      const result = await ApiService.login(identifier.trim(), password, keepSignedIn);
+      if (!result) {
+        setError('The credentials entered are incorrect. Please try again.');
+        return;
       }
-    } catch (err: any) {
-      setError(err?.message || 'Login failed. Please verify credentials.');
+      setCurrentUser(result.user);
+      showToast({ type: 'success', title: `Welcome back, ${result.user.name}`, message: `Signed in to your ${result.user.role} workspace.` });
+      onSuccess();
+    } catch (loginError: any) {
+      setError(loginError?.message || 'Unable to sign in. Check your credentials and try again.');
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleQuickRoleLogin = (role: UserRole) => {
-    if (role === 'admin') {
-      const admin = allUsers.find(u => u.role === 'admin') || allUsers[0];
-      setIdentifier(admin.email);
-      setPassword('rabee2026!');
-      setCurrentUser(admin);
-      showToast({
-        type: 'success',
-        title: `Logged in as ${admin.name}`,
-        message: 'Role: ADMIN / OPERATIONS',
-      });
-      onSuccess();
-    } else if (role === 'rider') {
-      const activeRider = riders.find(r => r.status === 'active') || riders[0];
-      setIdentifier(activeRider.username || 'rabee1');
-      setPassword(activeRider.password || 'password123');
-      
-      const riderUser = {
-        id: `usr-${activeRider.id}`,
-        name: activeRider.name,
-        email: `${activeRider.username}@rabee.io`,
-        role: 'rider' as UserRole,
-        rider_id: activeRider.id,
-        phone: activeRider.phone,
-        hub: activeRider.hub,
-      };
-      setCurrentUser(riderUser);
-      showToast({
-        type: 'success',
-        title: `Welcome back, ${activeRider.name}`,
-        message: `Rider Account (@${activeRider.username})`,
-      });
-      onSuccess();
-    } else if (role === 'manager') {
-      const mgr = allUsers.find(u => u.role === 'manager') || allUsers[1];
-      setIdentifier(mgr.email);
-      setPassword('rabee2026!');
-      setCurrentUser(mgr);
-      showToast({
-        type: 'success',
-        title: `Logged in as ${mgr.name}`,
-        message: 'Role: FLEET MANAGER',
-      });
-      onSuccess();
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        {/* Rabee Brand Logo */}
-        <div className="flex flex-col items-center text-center">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-500 text-slate-950 font-black text-3xl shadow-lg shadow-amber-500/25 mb-4"
-          >
-            R
-          </motion.div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-            Rabee
-          </h1>
-          <p className="text-xs font-bold uppercase tracking-widest text-amber-600 mt-1">
-            Parcel Operations Platform
-          </p>
-        </div>
-
-        {/* Welcome Text */}
-        <div className="mt-8 text-center sm:text-left">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-            Sign In to Terminal
-          </h2>
-          <p className="mt-1 text-sm text-slate-500 font-medium">
-            Riders sign in with username (e.g. <span className="font-mono text-amber-700 font-bold">rabee1</span>). Admins sign in with email or username.
-          </p>
-        </div>
-
-        {/* Form Container */}
-        <div className="mt-6 rounded-3xl bg-white border border-slate-200 p-6 sm:p-8 shadow-xs">
-          <form onSubmit={handleLogin} className="space-y-4">
-            <FormField
-              id="login-identifier"
-              label="Username or Email"
-              type="text"
-              value={identifier}
-              onChange={e => {
-                setIdentifier(e.target.value);
-                if (error) setError(null);
-              }}
-              placeholder="e.g. rabee1 or peter.kamau@rabee.io"
-              icon={<UserIcon className="h-4 w-4 text-slate-400" />}
-              error={error || undefined}
-              required
-              autoFocus
-            />
-
-            <FormField
-              id="login-password"
-              label="Password"
-              type="password"
-              value={password}
-              onChange={e => {
-                setPassword(e.target.value);
-                if (error) setError(null);
-              }}
-              placeholder="Enter your security password"
-              icon={<Lock className="h-4 w-4 text-slate-400" />}
-              required
-            />
-
-            <div className="flex items-center justify-between text-xs pt-1">
-              <label className="flex items-center gap-2 text-slate-600 cursor-pointer font-medium">
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="rounded border-slate-300 bg-white text-amber-500 focus:ring-0"
-                />
-                <span>Remember terminal</span>
-              </label>
-              <button
-                type="button"
-                onClick={() => showToast({ type: 'info', title: 'Rider Credentials', message: 'Riders receive company usernames like rabee1, rabee2.' })}
-                className="text-amber-600 hover:text-amber-700 font-bold cursor-pointer"
-              >
-                Forgot credentials?
-              </button>
+    <div className="min-h-screen bg-slate-100 p-3 sm:p-5 lg:p-8">
+      <div className="mx-auto grid min-h-[calc(100vh-1.5rem)] max-w-7xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-900/5 sm:min-h-[calc(100vh-2.5rem)] lg:min-h-[calc(100vh-4rem)] lg:grid-cols-[0.9fr_1.1fr]">
+        <section className="relative hidden overflow-hidden bg-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-between">
+          <div className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-amber-500/15 blur-3xl" />
+          <div className="absolute -bottom-40 -left-24 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl" />
+          <div className="relative">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-2xl font-black text-slate-950">R</div>
+              <div><p className="text-xl font-extrabold">Rabee</p><p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Parcel Operations</p></div>
             </div>
-
-            <div className="pt-2">
-              <PrimaryButton
-                type="submit"
-                loading={loading}
-                icon={<ArrowRight className="h-4 w-4" />}
-              >
-                Sign In
-              </PrimaryButton>
-            </div>
-          </form>
-
-          {/* Quick Demo Role Access Bar */}
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                <Sparkles className="h-3 w-3 text-amber-600" />
-                Quick Role Demo Sign-in
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium">1-click switch</span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickRoleLogin('admin')}
-                className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-50 hover:bg-amber-50/50 border border-slate-200 hover:border-amber-300 transition-all cursor-pointer group"
-              >
-                <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-100 text-amber-800 mb-1 group-hover:scale-110 transition-transform">
-                  <ShieldCheck className="h-4 w-4" />
-                </div>
-                <span className="text-xs font-bold text-slate-800">Admin</span>
-                <span className="text-[10px] text-slate-400 font-medium">Peter K.</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickRoleLogin('rider')}
-                className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-50 hover:bg-emerald-50/50 border border-slate-200 hover:border-emerald-300 transition-all cursor-pointer group"
-              >
-                <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800 mb-1 group-hover:scale-110 transition-transform">
-                  <Bike className="h-4 w-4" />
-                </div>
-                <span className="text-xs font-bold text-slate-800">Rider</span>
-                <span className="text-[10px] text-emerald-700 font-mono font-bold">@rabee1</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickRoleLogin('manager')}
-                className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-50 hover:bg-sky-50/50 border border-slate-200 hover:border-sky-300 transition-all cursor-pointer group"
-              >
-                <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-sky-100 text-sky-800 mb-1 group-hover:scale-110 transition-transform">
-                  <BarChart3 className="h-4 w-4" />
-                </div>
-                <span className="text-xs font-bold text-slate-800">Manager</span>
-                <span className="text-[10px] text-slate-400 font-medium">Sarah O.</span>
-              </button>
+            <div className="mt-20 max-w-lg">
+              <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-xs font-bold text-amber-300"><ShieldCheck className="h-3.5 w-3.5" /> Secure operations access</span>
+              <h1 className="mt-6 text-4xl font-black leading-tight tracking-tight xl:text-5xl">Move parcels with clarity and control.</h1>
+              <p className="mt-5 max-w-md text-base leading-relaxed text-slate-400">One secure sign-in gives every team member access to the workspace and permissions assigned to their account.</p>
             </div>
           </div>
-        </div>
+          <div className="relative grid grid-cols-3 gap-3">
+            {[{ icon: PackageCheck, value: 'Live', label: 'Allocation status' }, { icon: RotateCcw, value: 'Fast', label: 'Return capture' }, { icon: Users, value: 'Clear', label: 'Fleet oversight' }].map(item => (
+              <div key={item.label} className="rounded-2xl border border-white/10 bg-white/5 p-4"><item.icon className="h-5 w-5 text-amber-400" /><p className="mt-3 text-sm font-extrabold">{item.value}</p><p className="mt-0.5 text-xs text-slate-500">{item.label}</p></div>
+            ))}
+          </div>
+        </section>
 
-        {/* Footer */}
-        <div className="mt-8 text-center text-xs text-slate-400 font-medium">
-          <p>Rabee Operations System v2.4</p>
-          <p className="mt-0.5 text-[11px] text-slate-400">
-            Nairobi Central Sorting Hub • Encrypted Operations Terminal
-          </p>
-        </div>
+        <main className="flex items-center justify-center px-5 py-8 sm:px-10 lg:px-16">
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
+            <div className="mb-10 flex items-center gap-3 lg:hidden"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500 text-xl font-black text-slate-950">R</div><div><p className="text-xl font-extrabold text-slate-900">Rabee</p><p className="text-xs font-bold uppercase tracking-wider text-slate-400">Parcel Operations</p></div></div>
+            <div>
+              <p className="text-sm font-bold text-amber-700">Secure workspace access</p>
+              <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-900">Welcome back</h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-500">Enter the credentials assigned to your account. Your workspace and permissions will open automatically.</p>
+            </div>
+
+            <form onSubmit={handleLogin} className="mt-8 space-y-5">
+              <FormField id="login-identifier" label="Username or work email" type="text" value={identifier} onChange={event => { setIdentifier(event.target.value); if (error) setError(null); }} placeholder="Enter your username or email" icon={<UserIcon className="h-4 w-4 text-slate-400" />} error={error || undefined} autoComplete="username" required autoFocus />
+              <div>
+                <FormField id="login-password" label="Password" type={showPassword ? 'text' : 'password'} value={password} onChange={event => { setPassword(event.target.value); if (error) setError(null); }} placeholder="Enter your password" icon={<Lock className="h-4 w-4 text-slate-400" />} autoComplete="current-password" required />
+                <button type="button" onClick={() => setShowPassword(value => !value)} className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900">{showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}{showPassword ? 'Hide password' : 'Show password'}</button>
+              </div>
+              <div className="flex items-center justify-between gap-4 text-xs">
+                <label className="flex cursor-pointer items-center gap-2 font-medium text-slate-600"><input type="checkbox" checked={keepSignedIn} onChange={event => setKeepSignedIn(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-amber-500" /><span>Keep me signed in</span></label>
+                <button type="button" onClick={() => showToast({ type: 'info', title: 'Credential assistance', message: 'Riders should contact an administrator. Staff should contact their system administrator.' })} className="font-bold text-amber-700 hover:text-amber-800">Need help signing in?</button>
+              </div>
+              <PrimaryButton type="submit" loading={loading} icon={<ArrowRight className="h-4 w-4" />}>Sign in securely</PrimaryButton>
+            </form>
+
+            <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-start gap-3"><Bike className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" /><div><p className="text-xs font-bold text-slate-800">Rider access</p><p className="mt-1 text-xs leading-relaxed text-slate-500">Use the username and temporary password issued by your administrator. You do not need to select a role.</p></div></div>
+            </div>
+            <p className="mt-8 text-center text-xs text-slate-400">Rabee Operations System • Mauritius</p>
+          </motion.div>
+        </main>
       </div>
     </div>
   );
