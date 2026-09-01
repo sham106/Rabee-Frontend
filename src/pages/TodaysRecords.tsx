@@ -32,7 +32,7 @@ export const TodaysRecords: React.FC<TodaysRecordsProps> = ({
 }) => {
   const {
     selectedDate,
-    todaySummary,
+    selectedDateSummary: todaySummary,
     allocations,
     returns,
     riders,
@@ -139,11 +139,11 @@ export const TodaysRecords: React.FC<TodaysRecordsProps> = ({
       {/* Tabs & Search Bar */}
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-1 rounded-2xl bg-white border border-slate-200 p-1 shadow-xs">
+          <div className="grid w-full grid-cols-2 gap-1 rounded-2xl bg-white border border-slate-200 p-1 shadow-xs sm:flex sm:w-auto sm:items-center">
             <button
               type="button"
               onClick={() => setActiveTab('allocations')}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
+              className={`min-w-0 rounded-xl px-2 py-2 text-[11px] font-bold transition-all cursor-pointer sm:px-4 sm:text-xs ${
                 activeTab === 'allocations'
                   ? 'bg-amber-500 text-slate-950 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -154,7 +154,7 @@ export const TodaysRecords: React.FC<TodaysRecordsProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('returns')}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
+              className={`min-w-0 rounded-xl px-2 py-2 text-[11px] font-bold transition-all cursor-pointer sm:px-4 sm:text-xs ${
                 activeTab === 'returns'
                   ? 'bg-amber-500 text-slate-950 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -164,8 +164,8 @@ export const TodaysRecords: React.FC<TodaysRecordsProps> = ({
             </button>
           </div>
 
-          <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-3.5 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+          <div className="relative w-full flex-1 sm:max-w-xs">
+            <Search className="absolute left-3.5 top-2.5 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
@@ -234,8 +234,8 @@ export const TodaysRecords: React.FC<TodaysRecordsProps> = ({
                     </div>
 
                     {/* Counts & Actions */}
-                    <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                      <div className="flex items-center gap-3 text-right">
+                    <div className="flex min-w-0 items-center justify-between gap-2 border-t border-slate-100 pt-3 sm:justify-end sm:border-t-0 sm:pt-0">
+                      <div className="grid min-w-0 flex-1 grid-cols-3 gap-2 text-center sm:flex sm:flex-none sm:items-center sm:gap-3 sm:text-right">
                         <div>
                           <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
                             Assigned
@@ -264,7 +264,7 @@ export const TodaysRecords: React.FC<TodaysRecordsProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1 pl-2 border-l border-slate-100">
+                      <div className="flex shrink-0 items-center gap-1 border-l border-slate-100 pl-2">
                         <button
                           type="button"
                           onClick={() => handleOpenEdit(alc)}

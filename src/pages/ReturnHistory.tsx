@@ -15,7 +15,7 @@ interface ReturnHistoryProps {
 export const ReturnHistory: React.FC<ReturnHistoryProps> = ({ onOpenRecordReturn }) => {
   const { currentUser, returns, riders, deleteParcelReturn } = useApp();
   const role = currentUser?.role || 'rider';
-  const riderId = currentUser?.rider_id || 'rdr-1';
+  const riderId = currentUser?.rider_id;
 
   const [dateRange, setDateRange] = useState<DateFilterRange>('today');
   const [customDate, setCustomDate] = useState<string>(() => getLocalDateString());

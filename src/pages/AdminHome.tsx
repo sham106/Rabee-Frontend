@@ -47,7 +47,7 @@ export const AdminHome: React.FC<AdminHomeProps> = ({ onOpenAddRecords, onNaviga
           <h1 className="mt-2 text-3xl font-black tracking-[-0.045em] text-slate-950 lg:text-4xl">{getGreeting(currentUser?.name)}</h1>
           <p className="mt-1 text-sm font-medium text-slate-500">A clear view of today’s intake, dispatch and exceptions.</p>
         </div>
-        <div className="flex items-center gap-3 self-start rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:self-auto"><CalendarDays className="h-4 w-4 text-amber-600" /><div><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Operating date</p><p className="text-xs font-black text-slate-800">{formatDate(selectedDate)}</p></div></div>
+        <div className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:w-auto sm:min-w-44 sm:justify-start sm:gap-3"><CalendarDays className="h-4 w-4 shrink-0 text-amber-600" /><div className="flex items-center gap-2 sm:block"><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Operating date</p><p className="whitespace-nowrap text-xs font-black text-slate-800 sm:mt-0.5">{formatDate(selectedDate)}</p></div></div>
       </header>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.7fr)]">

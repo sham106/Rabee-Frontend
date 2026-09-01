@@ -2,7 +2,7 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { ReturnCard } from '../components/cards/ReturnCard';
 import { formatDate, getGreeting } from '../utils/formatters';
-import { ArrowUpRight, CheckCircle2, ChevronRight, Clock3, RotateCcw, Route, ScanLine } from 'lucide-react';
+import { ArrowUpRight, CalendarDays, CheckCircle2, ChevronRight, Clock3, RotateCcw, Route, ScanLine } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface RiderHomeProps { onOpenRecordReturn: () => void; onViewAllReturns: () => void; }
@@ -19,15 +19,18 @@ export const RiderHome: React.FC<RiderHomeProps> = ({ onOpenRecordReturn, onView
 
   return (
     <div className="mx-auto max-w-xl space-y-5 pb-28 md:pb-12">
-      <header className="flex items-start justify-between gap-4 px-1">
+      <header className="flex flex-col gap-3 px-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-amber-700">Field workspace</p>
           <h1 className="mt-1 text-2xl font-black tracking-[-0.04em] text-slate-950">{getGreeting(currentUser?.name)}</h1>
           <p className="mt-1 text-sm font-medium text-slate-500">Your route, returns and daily balance.</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-right shadow-sm">
-          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Operating day</p>
-          <p className="mt-0.5 text-xs font-extrabold text-slate-800">{formatDate(selectedDate)}</p>
+        <div className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 shadow-sm sm:w-auto sm:min-w-40 sm:justify-start sm:gap-3">
+          <CalendarDays className="h-4 w-4 shrink-0 text-amber-600" />
+          <div className="flex items-center gap-2 sm:block">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Operating day</p>
+            <p className="text-xs font-extrabold whitespace-nowrap text-slate-800 sm:mt-0.5">{formatDate(selectedDate)}</p>
+          </div>
         </div>
       </header>
 
