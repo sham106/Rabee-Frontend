@@ -10,6 +10,7 @@ import {
   History,
   BarChart2,
   PieChart,
+  PackageCheck,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -27,6 +28,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   activeTab,
   onTabChange,
   onSelectTab,
+  onOpenAddRecords,
 }) => {
   const { currentUser } = useApp();
   const role = currentUser?.role || 'admin';
@@ -68,6 +70,17 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 
   return (
     <nav className="fixed bottom-3 left-3 right-3 z-40 md:hidden rounded-[1.6rem] border border-white/10 bg-slate-950/95 p-1.5 shadow-2xl shadow-slate-950/25 backdrop-blur-xl">
+      {role === 'admin' && onOpenAddRecords && (
+        <button
+          type="button"
+          onClick={onOpenAddRecords}
+          className="absolute -top-14 right-1 flex h-11 items-center gap-2 rounded-2xl bg-amber-400 px-4 text-xs font-black text-slate-950 shadow-lg shadow-amber-500/25 active:scale-95"
+          aria-label="Assign parcels to a rider"
+        >
+          <PackageCheck className="h-4 w-4" />
+          Assign parcels
+        </button>
+      )}
       <div className="flex items-center justify-around">
         {items.map(item => {
           const Icon = item.icon;

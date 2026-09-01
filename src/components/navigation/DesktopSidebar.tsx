@@ -153,7 +153,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-50 hover:bg-amber-100/80 border border-amber-200 px-4 py-3 text-xs font-bold text-amber-800 transition-all cursor-pointer shadow-xs"
             >
               <ClipboardList className="h-4 w-4 text-amber-600" />
-              <span>+ Add Today's Records</span>
+              <span>Assign Parcels</span>
             </button>
           </div>
         )}

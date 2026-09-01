@@ -37,17 +37,17 @@ export const AddRecordsFlow: React.FC<AddRecordsFlowProps> = ({ onFinish, onCanc
     showToast,
   } = useApp();
 
-  // Find existing intake for today or default to 520
+  // Find an existing intake for the selected operating date.
   const existingIntake = intakes.find(i => i.date === selectedDate);
   const [step, setStep] = useState<1 | 2>(existingIntake ? 2 : 1);
-  const [dailyIntakeVal, setDailyIntakeVal] = useState<number>(existingIntake ? existingIntake.total_received : 520);
+  const [dailyIntakeVal, setDailyIntakeVal] = useState<number>(existingIntake ? existingIntake.total_received : 0);
   const [intakeNotes, setIntakeNotes] = useState<string>(existingIntake?.notes || '');
   const [isSavingIntake, setIsSavingIntake] = useState(false);
 
   // Step 2 State: Rider allocation
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
   const [riderSearch, setRiderSearch] = useState('');
-  const [allocationQty, setAllocationQty] = useState<number>(45);
+  const [allocationQty, setAllocationQty] = useState<number>(0);
   const [allocationNotes, setAllocationNotes] = useState<string>('');
   const [isSavingAllocation, setIsSavingAllocation] = useState(false);
   const [allowOverAllocation, setAllowOverAllocation] = useState(false);
@@ -79,7 +79,7 @@ export const AddRecordsFlow: React.FC<AddRecordsFlowProps> = ({ onFinish, onCanc
   const handleSelectRider = (rider: Rider) => {
     setSelectedRider(rider);
     const existing = dayAllocations.find(a => a.rider_id === rider.id);
-    setAllocationQty(existing ? existing.quantity : 45);
+    setAllocationQty(existing ? existing.quantity : 0);
     setAllocationNotes(existing?.notes || '');
   };
 
@@ -146,7 +146,7 @@ export const AddRecordsFlow: React.FC<AddRecordsFlowProps> = ({ onFinish, onCanc
 
       if (addAnother) {
         setSelectedRider(null);
-        setAllocationQty(45);
+        setAllocationQty(0);
         setAllocationNotes('');
         setAllowOverAllocation(false);
       } else {
