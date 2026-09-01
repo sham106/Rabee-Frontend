@@ -191,7 +191,7 @@ function RabeeMainApp() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[#f5f6f4] text-slate-900 flex flex-col md:flex-row">
       {/* Desktop Sidebar Navigation */}
       <DesktopSidebar
         activeTab={activeTab}
@@ -219,7 +219,7 @@ function RabeeMainApp() {
         />
 
         {/* Dynamic Page Container */}
-        <main className={`flex-1 w-full p-4 sm:p-6 lg:p-8 ${role === 'manager' ? 'max-w-none' : 'max-w-7xl mx-auto'}`}>
+        <main className="flex-1 w-full p-4 sm:p-6 lg:p-8 xl:p-10">
           {selectedDate !== getLocalDateString() && (
             <div className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-3.5 text-amber-950" role="status">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />

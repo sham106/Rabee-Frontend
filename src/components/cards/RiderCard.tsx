@@ -1,6 +1,6 @@
 import React from 'react';
 import { Rider, RiderDaySummary } from '../../types';
-import { ChevronRight, PackageCheck, RotateCcw, User } from 'lucide-react';
+import { ChevronRight, PackageCheck, RotateCcw } from 'lucide-react';
 
 interface RiderCardProps {
   rider: Rider;
@@ -83,14 +83,6 @@ export const RiderCard: React.FC<RiderCardProps> = ({
             <span className="font-mono text-xs font-semibold text-amber-700 bg-amber-50/80 px-1.5 py-0.5 rounded-md border border-amber-200/60">
               @{rider.username || 'rider'}
             </span>
-            {rider.vehicleType && (
-              <>
-                <span className="text-slate-300">•</span>
-                <span className="text-[11px] text-slate-500 font-medium">
-                  {rider.vehicleType}
-                </span>
-              </>
-            )}
           </div>
         </div>
       </div>

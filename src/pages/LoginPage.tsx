@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { PrimaryButton } from '../components/common/PrimaryButton';
-import { FormField } from '../components/common/FormField';
 import { ApiService } from '../services/api';
-import { ArrowRight, Bike, Eye, EyeOff, Lock, PackageCheck, RotateCcw, ShieldCheck, User as UserIcon, Users } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, LockKeyhole, User as UserIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface LoginPageProps { onSuccess: () => void; }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
-  const { setCurrentUser, showToast } = useApp();
+  const { setCurrentUser } = useApp();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -20,77 +18,83 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!identifier.trim() || !password) {
-      setError('Enter your username or work email and password.');
+      setError('Enter your username and password.');
       return;
     }
     setLoading(true);
     setError(null);
     try {
       const result = await ApiService.login(identifier.trim(), password, keepSignedIn);
-      if (!result) {
-        setError('The credentials entered are incorrect. Please try again.');
-        return;
-      }
+      if (!result) throw new Error('Unable to sign in.');
       setCurrentUser(result.user);
-      showToast({ type: 'success', title: `Welcome back, ${result.user.name}`, message: `Signed in to your ${result.user.role} workspace.` });
       onSuccess();
     } catch (loginError: any) {
-      setError(loginError?.message || 'Unable to sign in. Check your credentials and try again.');
+      setError(loginError?.message || 'Unable to sign in.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 p-3 sm:p-5 lg:p-8">
-      <div className="mx-auto grid min-h-[calc(100vh-1.5rem)] max-w-7xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-900/5 sm:min-h-[calc(100vh-2.5rem)] lg:min-h-[calc(100vh-4rem)] lg:grid-cols-[0.9fr_1.1fr]">
-        <section className="relative hidden overflow-hidden bg-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-between">
-          <div className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-amber-500/15 blur-3xl" />
-          <div className="absolute -bottom-40 -left-24 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl" />
+    <div className="relative min-h-screen overflow-hidden bg-[#eceee9] p-3 sm:p-6 lg:p-8">
+      <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:radial-gradient(#94a3b8_0.6px,transparent_0.6px)] [background-size:18px_18px]" />
+      <div className="relative mx-auto grid min-h-[calc(100vh-1.5rem)] max-w-6xl overflow-hidden rounded-[2.25rem] border border-white/70 bg-white shadow-2xl shadow-slate-900/10 sm:min-h-[calc(100vh-3rem)] lg:min-h-[calc(100vh-4rem)] lg:grid-cols-[0.85fr_1.15fr]">
+        <aside className="relative hidden overflow-hidden bg-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-between">
+          <div className="absolute -left-28 top-1/3 h-72 w-72 rounded-full bg-amber-400/15 blur-3xl" />
+          <div className="relative flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-400 text-xl font-black text-slate-950">R</div>
+            <div><p className="text-lg font-black tracking-tight">Rabee</p><p className="text-[9px] font-bold uppercase tracking-[0.24em] text-slate-500">Parcel operations</p></div>
+          </div>
           <div className="relative">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-2xl font-black text-slate-950">R</div>
-              <div><p className="text-xl font-extrabold">Rabee</p><p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Parcel Operations</p></div>
-            </div>
-            <div className="mt-20 max-w-lg">
-              <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-xs font-bold text-amber-300"><ShieldCheck className="h-3.5 w-3.5" /> Secure operations access</span>
-              <h1 className="mt-6 text-4xl font-black leading-tight tracking-tight xl:text-5xl">Move parcels with clarity and control.</h1>
-              <p className="mt-5 max-w-md text-base leading-relaxed text-slate-400">One secure sign-in gives every team member access to the workspace and permissions assigned to their account.</p>
-            </div>
+            <p className="max-w-sm text-5xl font-black leading-[0.94] tracking-[-0.065em]">Every parcel.<br /><span className="text-amber-300">Clearly managed.</span></p>
+            <div className="mt-10 h-px w-full bg-gradient-to-r from-amber-400/70 to-transparent" />
           </div>
-          <div className="relative grid grid-cols-3 gap-3">
-            {[{ icon: PackageCheck, value: 'Live', label: 'Allocation status' }, { icon: RotateCcw, value: 'Fast', label: 'Return capture' }, { icon: Users, value: 'Clear', label: 'Fleet oversight' }].map(item => (
-              <div key={item.label} className="rounded-2xl border border-white/10 bg-white/5 p-4"><item.icon className="h-5 w-5 text-amber-400" /><p className="mt-3 text-sm font-extrabold">{item.value}</p><p className="mt-0.5 text-xs text-slate-500">{item.label}</p></div>
-            ))}
-          </div>
-        </section>
+          <p className="relative text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600">Mauritius · Operations system</p>
+        </aside>
 
-        <main className="flex items-center justify-center px-5 py-8 sm:px-10 lg:px-16">
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
-            <div className="mb-10 flex items-center gap-3 lg:hidden"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500 text-xl font-black text-slate-950">R</div><div><p className="text-xl font-extrabold text-slate-900">Rabee</p><p className="text-xs font-bold uppercase tracking-wider text-slate-400">Parcel Operations</p></div></div>
-            <div>
-              <p className="text-sm font-bold text-amber-700">Secure workspace access</p>
-              <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-900">Welcome back</h2>
-              <p className="mt-2 text-sm leading-relaxed text-slate-500">Enter the credentials assigned to your account. Your workspace and permissions will open automatically.</p>
+        <main className="flex items-center justify-center px-5 py-10 sm:px-12 lg:px-20">
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="w-full max-w-sm">
+            <div className="mb-12 flex items-center gap-3 lg:hidden">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-lg font-black text-amber-300">R</div>
+              <div><p className="text-lg font-black text-slate-950">Rabee</p><p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Parcel operations</p></div>
             </div>
 
-            <form onSubmit={handleLogin} className="mt-8 space-y-5">
-              <FormField id="login-identifier" label="Username or work email" type="text" value={identifier} onChange={event => { setIdentifier(event.target.value); if (error) setError(null); }} placeholder="Enter your username or email" icon={<UserIcon className="h-4 w-4 text-slate-400" />} error={error || undefined} autoComplete="username" required autoFocus />
-              <div>
-                <FormField id="login-password" label="Password" type={showPassword ? 'text' : 'password'} value={password} onChange={event => { setPassword(event.target.value); if (error) setError(null); }} placeholder="Enter your password" icon={<Lock className="h-4 w-4 text-slate-400" />} autoComplete="current-password" required />
-                <button type="button" onClick={() => setShowPassword(value => !value)} className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900">{showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}{showPassword ? 'Hide password' : 'Show password'}</button>
+            <div className="mb-8">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-amber-700">Secure access</p>
+              <h1 className="mt-2 text-4xl font-black tracking-[-0.055em] text-slate-950">Sign in</h1>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <label className="block">
+                <span className="mb-2 block text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-500">Username or email</span>
+                <span className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-amber-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-amber-500/10">
+                  <UserIcon className="h-4 w-4 shrink-0 text-slate-400" />
+                  <input value={identifier} onChange={event => { setIdentifier(event.target.value); setError(null); }} autoComplete="username" autoFocus required className="h-14 w-full bg-transparent text-sm font-bold text-slate-900 outline-none placeholder:font-medium placeholder:text-slate-400" placeholder="Username or email" />
+                </span>
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-500">Password</span>
+                <span className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-amber-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-amber-500/10">
+                  <LockKeyhole className="h-4 w-4 shrink-0 text-slate-400" />
+                  <input type={showPassword ? 'text' : 'password'} value={password} onChange={event => { setPassword(event.target.value); setError(null); }} autoComplete="current-password" required className="h-14 min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-900 outline-none placeholder:font-medium placeholder:text-slate-400" placeholder="Password" />
+                  <button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700">{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
+                </span>
+              </label>
+
+              <div className="flex items-center justify-between py-1">
+                <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-slate-600"><input type="checkbox" checked={keepSignedIn} onChange={event => setKeepSignedIn(event.target.checked)} className="h-4 w-4 rounded border-slate-300 accent-amber-500" />Keep me signed in</label>
               </div>
-              <div className="flex items-center justify-between gap-4 text-xs">
-                <label className="flex cursor-pointer items-center gap-2 font-medium text-slate-600"><input type="checkbox" checked={keepSignedIn} onChange={event => setKeepSignedIn(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-amber-500" /><span>Keep me signed in</span></label>
-                <button type="button" onClick={() => showToast({ type: 'info', title: 'Credential assistance', message: 'Riders should contact an administrator. Staff should contact their system administrator.' })} className="font-bold text-amber-700 hover:text-amber-800">Need help signing in?</button>
-              </div>
-              <PrimaryButton type="submit" loading={loading} icon={<ArrowRight className="h-4 w-4" />}>Sign in securely</PrimaryButton>
+
+              {error && <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700">{error}</div>}
+
+              <button type="submit" disabled={loading} className="group flex h-14 w-full items-center justify-between rounded-2xl bg-slate-950 px-5 text-sm font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-slate-800 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-60">
+                <span>{loading ? 'Signing in…' : 'Continue'}</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400 text-slate-950"><ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></span>
+              </button>
             </form>
 
-            <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="flex items-start gap-3"><Bike className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" /><div><p className="text-xs font-bold text-slate-800">Rider access</p><p className="mt-1 text-xs leading-relaxed text-slate-500">Use the username and temporary password issued by your administrator. You do not need to select a role.</p></div></div>
-            </div>
-            <p className="mt-8 text-center text-xs text-slate-400">Rabee Operations System • Mauritius</p>
+            <p className="mt-10 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Rabee · Mauritius</p>
           </motion.div>
         </main>
       </div>

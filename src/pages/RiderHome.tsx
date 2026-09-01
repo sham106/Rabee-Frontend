@@ -1,172 +1,69 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { StatCard } from '../components/common/StatCard';
-import { PrimaryButton } from '../components/common/PrimaryButton';
 import { ReturnCard } from '../components/cards/ReturnCard';
 import { formatDate, getGreeting } from '../utils/formatters';
-import {
-  RotateCcw,
-  PackageCheck,
-  Bike,
-  Clock,
-  ChevronRight,
-  TrendingUp,
-  AlertCircle,
-  Sparkles,
-} from 'lucide-react';
+import { ArrowUpRight, CheckCircle2, ChevronRight, Clock3, RotateCcw, Route, ScanLine } from 'lucide-react';
 import { motion } from 'motion/react';
 
-interface RiderHomeProps {
-  onOpenRecordReturn: () => void;
-  onViewAllReturns: () => void;
-}
+interface RiderHomeProps { onOpenRecordReturn: () => void; onViewAllReturns: () => void; }
 
-export const RiderHome: React.FC<RiderHomeProps> = ({
-  onOpenRecordReturn,
-  onViewAllReturns,
-}) => {
+export const RiderHome: React.FC<RiderHomeProps> = ({ onOpenRecordReturn, onViewAllReturns }) => {
   const { currentUser, selectedDate, allocations, returns, deleteParcelReturn } = useApp();
-
-  // Active rider ID
-  const riderId = currentUser?.rider_id || 'rdr-1';
-
-  // Rider's today's allocation
-  const todayAllocation = allocations.find(
-    a => a.rider_id === riderId && a.date === selectedDate
-  );
-  const allocatedQty = todayAllocation ? todayAllocation.quantity : 45;
-
-  // Rider's today's returns
-  const riderTodayReturns = returns.filter(
-    r => r.rider_id === riderId && r.return_date === selectedDate
-  );
+  const riderId = currentUser?.rider_id;
+  const todayAllocation = allocations.find(item => item.rider_id === riderId && item.date === selectedDate);
+  const allocatedQty = todayAllocation?.quantity || 0;
+  const riderTodayReturns = returns.filter(item => item.rider_id === riderId && item.return_date === selectedDate);
   const returnsCount = riderTodayReturns.length;
-  const netDelivered = allocatedQty - returnsCount;
+  const netDelivered = Math.max(0, allocatedQty - returnsCount);
+  const completion = allocatedQty > 0 ? Math.round((netDelivered / allocatedQty) * 100) : 0;
 
   return (
-    <div className="space-y-6 pb-20 max-w-lg mx-auto">
-      {/* Greeting & Date Header */}
-      <div className="space-y-1">
-        <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-700">
-            <Bike className="h-3.5 w-3.5" />
-            Active Route Shift
-          </span>
-          <span className="text-xs font-mono font-bold text-slate-400">
-            {formatDate(selectedDate)}
-          </span>
+    <div className="mx-auto max-w-xl space-y-5 pb-28 md:pb-12">
+      <header className="flex items-start justify-between gap-4 px-1">
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-amber-700">Field workspace</p>
+          <h1 className="mt-1 text-2xl font-black tracking-[-0.04em] text-slate-950">{getGreeting(currentUser?.name)}</h1>
+          <p className="mt-1 text-sm font-medium text-slate-500">Your route, returns and daily balance.</p>
         </div>
+        <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-right shadow-sm">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Operating day</p>
+          <p className="mt-0.5 text-xs font-extrabold text-slate-800">{formatDate(selectedDate)}</p>
+        </div>
+      </header>
 
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 pt-1">
-          {getGreeting(currentUser?.name)}
-        </h1>
-        <p className="text-xs text-slate-500 font-medium">
-          Ready for today’s parcel delivery run.
-        </p>
-      </div>
+      <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden rounded-[2rem] bg-slate-950 p-5 text-white shadow-xl shadow-slate-950/15">
+        <div className="absolute -right-16 -top-16 h-44 w-44 rounded-full bg-amber-400/20 blur-3xl" />
+        <div className="absolute bottom-0 right-0 h-28 w-40 opacity-[0.08] [background-image:radial-gradient(circle,#fff_1px,transparent_1px)] [background-size:12px_12px]" />
+        <div className="relative">
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-300"><span className={`h-2 w-2 rounded-full ${allocatedQty > 0 ? 'bg-emerald-400' : 'bg-amber-400'}`} />{allocatedQty > 0 ? 'Route active' : 'Awaiting allocation'}</span>
+            <Route className="h-5 w-5 text-amber-400" />
+          </div>
+          <div className="mt-8 flex items-end justify-between gap-4">
+            <div><p className="text-xs font-bold text-slate-400">PARCELS ASSIGNED</p><p className="mt-1 text-6xl font-black leading-none tracking-[-0.07em]">{allocatedQty}</p></div>
+            <div className="mb-1 text-right"><p className="text-2xl font-black text-emerald-400">{netDelivered}</p><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Net on route</p></div>
+          </div>
+          <div className="mt-6">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400"><span>Route balance</span><span className="text-white">{completion}%</span></div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-amber-400 transition-all duration-500" style={{ width: `${Math.min(100, completion)}%` }} /></div>
+          </div>
+        </div>
+      </motion.section>
 
-      {/* Hero Stat Cards */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard
-          id="rider-stat-allocation"
-          label="Today’s Allocation"
-          value={`${allocatedQty}`}
-          sublabel="Total parcels assigned"
-          variant="amber"
-          icon={<PackageCheck className="h-4 w-4" />}
-        />
-
-        <StatCard
-          id="rider-stat-returns"
-          label="Returns Recorded"
-          value={`${returnsCount}`}
-          sublabel="Undelivered returns"
-          variant="rose"
-          icon={<RotateCcw className="h-4 w-4" />}
-        />
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><CheckCircle2 className="h-4 w-4" /></div><p className="mt-4 text-3xl font-black tracking-tight text-slate-950">{netDelivered}</p><p className="text-xs font-bold text-slate-500">Remaining after returns</p></div>
+        <div className="rounded-[1.5rem] border border-rose-100 bg-rose-50/60 p-4 shadow-sm"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-rose-600"><RotateCcw className="h-4 w-4" /></div><p className="mt-4 text-3xl font-black tracking-tight text-slate-950">{returnsCount}</p><p className="text-xs font-bold text-slate-500">Returns logged today</p></div>
       </div>
 
-      {/* Net Deliveries Progress Card */}
-      <div className="rounded-3xl bg-white border border-slate-200 p-4 shadow-xs">
-        <div className="flex items-center justify-between text-xs mb-1.5">
-          <span className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">
-            Delivery Progress
-          </span>
-          <span className="font-mono text-emerald-700 font-bold">
-            {netDelivered} Delivered ({allocatedQty > 0 ? Math.round((netDelivered / allocatedQty) * 100) : 0}%)
-          </span>
-        </div>
+      <button type="button" onClick={onOpenRecordReturn} className="group flex w-full items-center justify-between rounded-[1.5rem] bg-amber-400 p-2 pl-4 text-left text-slate-950 shadow-lg shadow-amber-500/20 transition hover:bg-amber-300 active:scale-[0.99]">
+        <span className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-amber-300"><ScanLine className="h-5 w-5" /></span><span><span className="block text-sm font-black">Record parcel return</span><span className="block text-[11px] font-semibold text-slate-700">Scan or enter a barcode</span></span></span>
+        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/60"><ArrowUpRight className="h-5 w-5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></span>
+      </button>
 
-        <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100 border border-slate-200">
-          <div
-            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-300"
-            style={{
-              width: `${Math.max(
-                0,
-                Math.min(100, allocatedQty > 0 ? (netDelivered / allocatedQty) * 100 : 0)
-              )}%`,
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Prominent Primary CTA: Record a Return */}
-      <div>
-        <PrimaryButton
-          size="lg"
-          variant="amber"
-          icon={<RotateCcw className="h-5 w-5" />}
-          onClick={onOpenRecordReturn}
-        >
-          Record a Return
-        </PrimaryButton>
-      </div>
-
-      {/* Recent Returns Recorded Section */}
-      <div className="space-y-3 pt-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-bold text-slate-900">
-              Recent Returns
-            </h3>
-            <p className="text-xs text-slate-500 font-medium">
-              Parcels marked for return reconciliation today
-            </p>
-          </div>
-
-          {riderTodayReturns.length > 0 && (
-            <button
-              type="button"
-              onClick={onViewAllReturns}
-              className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 hover:text-amber-800 transition-colors cursor-pointer"
-            >
-              <span>View all ({riderTodayReturns.length})</span>
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-
-        {riderTodayReturns.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-6 text-center shadow-xs">
-            <p className="text-xs text-slate-500 font-medium">
-              No returns recorded yet today.
-            </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              All assigned parcels currently marked on delivery.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {riderTodayReturns.slice(0, 4).map(item => (
-              <ReturnCard
-                key={item.id}
-                item={item}
-                onDelete={deleteParcelReturn}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      <section className="space-y-3">
+        <div className="flex items-end justify-between px-1"><div><p className="text-base font-black text-slate-950">Today’s return log</p><p className="text-xs font-medium text-slate-500">Live reconciliation for this route</p></div>{riderTodayReturns.length > 0 && <button type="button" onClick={onViewAllReturns} className="flex items-center gap-1 text-xs font-extrabold text-amber-700">All {riderTodayReturns.length}<ChevronRight className="h-4 w-4" /></button>}</div>
+        {riderTodayReturns.length === 0 ? <div className="flex items-center gap-4 rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-5"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"><Clock3 className="h-5 w-5" /></div><div><p className="text-sm font-extrabold text-slate-800">No returns recorded</p><p className="mt-0.5 text-xs leading-relaxed text-slate-500">New return entries will appear here immediately.</p></div></div> : <div className="space-y-2">{riderTodayReturns.slice(0, 4).map(item => <ReturnCard key={item.id} item={item} onDelete={deleteParcelReturn} />)}</div>}
+      </section>
     </div>
   );
 };

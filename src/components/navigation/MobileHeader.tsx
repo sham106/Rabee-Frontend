@@ -9,10 +9,10 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ onOpenProfile }) => 
   const { currentUser, selectedDate } = useApp();
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 px-4 py-3 shadow-xs backdrop-blur-md sm:px-6 md:hidden">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-200/70 bg-[#f5f6f4]/90 px-4 py-3 backdrop-blur-xl sm:px-6 md:hidden">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-xl font-black text-slate-950 shadow-xs">R</div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-[0.9rem] bg-slate-950 text-lg font-black text-amber-300 shadow-sm">R</div>
           <div>
             <p className="font-extrabold tracking-tight text-slate-900">Rabee</p>
             <p className="line-clamp-1 text-xs font-medium text-slate-500">{getGreeting(currentUser?.name)}</p>
@@ -24,7 +24,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ onOpenProfile }) => 
             <Calendar className="h-3.5 w-3.5 text-amber-600" />
             <span className="font-semibold">{formatDate(selectedDate)}</span>
           </div>
-          <button type="button" onClick={onOpenProfile} aria-label="Open account profile" className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-xs hover:bg-slate-50">
+          <button type="button" onClick={onOpenProfile} aria-label="Open account profile" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50">
             <User className="h-5 w-5" />
           </button>
         </div>

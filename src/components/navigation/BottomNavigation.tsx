@@ -67,7 +67,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     role === 'rider' ? riderNavItems : role === 'manager' ? managerNavItems : adminNavItems;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-slate-200 bg-white/95 backdrop-blur-xl px-2 py-1.5 pb-safe shadow-lg">
+    <nav className="fixed bottom-3 left-3 right-3 z-40 md:hidden rounded-[1.6rem] border border-white/10 bg-slate-950/95 p-1.5 shadow-2xl shadow-slate-950/25 backdrop-blur-xl">
       <div className="flex items-center justify-around">
         {items.map(item => {
           const Icon = item.icon;
@@ -80,18 +80,18 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
               onClick={() => handleTabClick(item.id)}
               aria-current={isActive ? 'page' : undefined}
               aria-label={item.label}
-              className="relative flex flex-1 flex-col items-center justify-center py-2 px-1 text-center transition-all cursor-pointer"
+              className={`relative flex min-h-14 flex-1 flex-col items-center justify-center rounded-2xl px-1 py-2 text-center transition-all cursor-pointer ${isActive ? 'bg-white/10' : ''}`}
             >
               <div className="relative flex items-center justify-center">
                 <Icon
                   className={`h-5 w-5 transition-colors duration-200 ${
-                    isActive ? 'text-amber-600 stroke-[2.4]' : 'text-slate-400 hover:text-slate-600'
+                    isActive ? 'text-amber-300 stroke-[2.4]' : 'text-slate-500 hover:text-slate-300'
                   }`}
                 />
                 {isActive && (
                   <motion.div
                     layoutId="activeTabGlow"
-                    className="absolute -inset-1.5 rounded-full bg-amber-500/15 blur-xs"
+                    className="absolute -inset-1.5 rounded-full bg-amber-400/15 blur-xs"
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -99,7 +99,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 
               <span
                 className={`mt-1 text-[10px] tracking-tight transition-colors duration-200 ${
-                  isActive ? 'text-amber-600 font-bold' : 'text-slate-500 font-medium'
+                  isActive ? 'text-amber-200 font-bold' : 'text-slate-500 font-medium'
                 }`}
               >
                 {item.label}
@@ -108,7 +108,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
               {isActive && (
                 <motion.div
                   layoutId="activeTabIndicator"
-                  className="absolute bottom-0 h-1 w-6 rounded-full bg-amber-500"
+                  className="absolute -bottom-0.5 h-1 w-6 rounded-full bg-amber-400"
                   transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
               )}
