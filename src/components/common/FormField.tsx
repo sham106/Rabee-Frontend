@@ -5,6 +5,7 @@ interface FormFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   id: string;
   error?: string;
   hint?: string;
+  helper?: string;
   icon?: React.ReactNode;
   rightElement?: React.ReactNode;
 }
@@ -14,6 +15,7 @@ export const FormField: React.FC<FormFieldProps> = ({
   id,
   error,
   hint,
+  helper,
   icon,
   rightElement,
   className = '',
@@ -52,7 +54,11 @@ export const FormField: React.FC<FormFieldProps> = ({
         )}
       </div>
 
-      {error && <p className="text-xs font-semibold text-rose-600 mt-1">{error}</p>}
+      {error ? (
+        <p className="mt-1 text-xs font-semibold text-rose-600">{error}</p>
+      ) : helper ? (
+        <p className="mt-1 text-[11px] text-slate-400">{helper}</p>
+      ) : null}
     </div>
   );
 };
