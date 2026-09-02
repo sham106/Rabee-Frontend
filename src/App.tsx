@@ -25,9 +25,10 @@ import { AlertTriangle } from 'lucide-react';
 import { getLocalDateString } from './utils/dates';
 import { formatDate } from './utils/formatters';
 import { ApiService } from './services/api';
+import { DashboardSkeleton } from './components/common/DashboardSkeleton';
 
 function RabeeMainApp() {
-  const { currentUser, setCurrentUser, selectedDate } = useApp();
+  const { currentUser, setCurrentUser, selectedDate, isDataLoading } = useApp();
 
   // Navigation state
   const [activeTab, setActiveTab] = useState<NavTab>('home');
@@ -237,7 +238,7 @@ function RabeeMainApp() {
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.15 }}
             >
-              {renderCurrentScreen()}
+              {isDataLoading ? <DashboardSkeleton role={role} /> : renderCurrentScreen()}
             </motion.div>
           </AnimatePresence>
         </main>

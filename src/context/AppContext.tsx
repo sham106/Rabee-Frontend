@@ -30,6 +30,7 @@ interface AppContextType {
   intakes: DailyIntake[];
   allocations: Allocation[];
   returns: ParcelReturn[];
+  isDataLoading: boolean;
 
   // Computed metrics
   todaySummary: DaySummary;
@@ -72,6 +73,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [intakes, setIntakes] = useState<DailyIntake[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [returns, setReturns] = useState<ParcelReturn[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(() => Boolean(currentUser && ApiService.hasSession()));
   const [selectedDate, setSelectedDate] = useState<string>(() => getLocalDateString());
   const [currentDate, setCurrentDate] = useState<string>(() => getLocalDateString());
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -96,8 +98,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Hydrate operational data from the Python API after a successful login.
   useEffect(() => {
-    if (!currentUser || !ApiService.hasSession()) return;
+    if (!currentUser || !ApiService.hasSession()) {
+      setIsDataLoading(false);
+      return;
+    }
     let cancelled = false;
+    setIsDataLoading(true);
     Promise.all([
       ApiService.getRiders(),
       ApiService.getIntakes(),
@@ -109,8 +115,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setIntakes(nextIntakes);
       setAllocations(nextAllocations);
       setReturns(nextReturns);
+      setIsDataLoading(false);
     }).catch(error => {
       if (!cancelled) {
+        setIsDataLoading(false);
         showToast({ type: 'error', title: 'Unable to load operations data', message: error?.message || 'Check the backend connection.' });
       }
     });
@@ -148,6 +156,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const setCurrentUser = (user: User | null) => {
+    setIsDataLoading(Boolean(user && ApiService.hasSession()));
     setCurrentUserState(user);
     StorageService.setCurrentUser(user);
   };
@@ -325,6 +334,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         intakes,
         allocations,
         returns,
+        isDataLoading,
         todaySummary,
         selectedDateSummary,
         riderSummaries,
