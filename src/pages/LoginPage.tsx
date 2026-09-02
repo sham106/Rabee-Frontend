@@ -43,7 +43,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           <div className="absolute -left-28 top-1/3 h-72 w-72 rounded-full bg-amber-400/15 blur-3xl" />
           <div className="relative flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-400 text-xl font-black text-slate-950">R</div>
-            <div><p className="text-lg font-black tracking-tight">Rabee</p><p className="text-[9px] font-bold uppercase tracking-[0.24em] text-slate-500">Parcel operations</p></div>
+            <div><p className="text-lg font-black tracking-tight">Rabee</p><p className="text-[9px] font-bold uppercase tracking-[0.24em] text-slate-500">Delivery Courier</p></div>
           </div>
           <div className="relative">
             <p className="max-w-sm text-5xl font-black leading-[0.94] tracking-[-0.065em]">Every parcel.<br /><span className="text-amber-300">Clearly managed.</span></p>
@@ -56,7 +56,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="w-full max-w-sm">
             <div className="mb-12 flex items-center gap-3 lg:hidden">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-lg font-black text-amber-300">R</div>
-              <div><p className="text-lg font-black text-slate-950">Rabee</p><p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Parcel operations</p></div>
+              <div><p className="text-lg font-black text-slate-950">Rabee</p><p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Delivery Courier</p></div>
             </div>
 
             <div className="mb-8">
