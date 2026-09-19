@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Flashlight, RefreshCw, X, Zap, Check } from 'lucide-react';
+import { BrowserQRCodeReader, BrowserCodeReader } from '@zxing/browser';
+import { Camera, Flashlight, Zap, Check } from 'lucide-react';
 import { Modal } from './Modal';
 import { SecondaryButton } from './SecondaryButton';
 
@@ -18,54 +19,99 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const codeReaderRef = useRef<BrowserCodeReader | null>(null);
   const [hasCameraAccess, setHasCameraAccess] = useState<boolean | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const [torchOn, setTorchOn] = useState(false);
   const [scannedCode, setScannedCode] = useState<string | null>(null);
 
-  // Sample barcode presets for testing/instant scan
-  const sampleBarcodes = ['RB928399', 'RB928405', 'RB928412', 'RB928430'];
-
   useEffect(() => {
-    let mounted = true;
+    let isActive = true;
 
     async function initCamera() {
-      if (!isOpen) return;
+      if (!isOpen || !videoRef.current) return;
 
       try {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-          });
-          if (mounted) {
-            streamRef.current = stream;
-            if (videoRef.current) {
-              videoRef.current.srcObject = stream;
-              await videoRef.current.play().catch(() => {});
-            }
-            setHasCameraAccess(true);
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          if (isActive) {
+            setHasCameraAccess(false);
+            setCameraError('This browser does not support camera-based barcode scanning. Please enter the barcode manually instead.');
           }
-        } else {
-          if (mounted) setHasCameraAccess(false);
+          return;
         }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        });
+
+        if (!isActive) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+
+        streamRef.current = stream;
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => undefined);
+
+        const reader = new BrowserCodeReader();
+        codeReaderRef.current = reader;
+
+        const controls = await reader.decodeFromVideoDevice(undefined, videoRef.current, (result, error) => {
+          if (result) {
+            const text = result.getText();
+            if (!text) return;
+            setScannedCode(text);
+            if (isActive) {
+              setTimeout(() => {
+                if (isActive) {
+                  onBarcodeDetected(text);
+                }
+              }, 250);
+            }
+          }
+
+          if (error && !(error as Error).message?.includes('NotFoundException')) {
+            console.warn('Barcode read warning:', error);
+          }
+        });
+
+        if (controls) {
+          (controls as any).stop?.();
+        }
+
+        setHasCameraAccess(true);
       } catch (err) {
-        console.warn('Camera access denied or unavailable in sandbox:', err);
-        if (mounted) setHasCameraAccess(false);
+        console.warn('Camera access denied or unavailable for barcode scan:', err);
+        if (isActive) {
+          setHasCameraAccess(false);
+          setCameraError('Camera access was blocked or unavailable. Please allow camera permission or enter the barcode manually.');
+        }
       }
     }
 
     if (isOpen) {
       setScannedCode(null);
+      setCameraError(null);
       initCamera();
     }
 
     return () => {
-      mounted = false;
+      isActive = false;
+      if (codeReaderRef.current) {
+        codeReaderRef.current.reset();
+        codeReaderRef.current = null;
+      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
       }
     };
-  }, [isOpen]);
+  }, [isOpen, onBarcodeDetected]);
 
   const toggleTorch = async () => {
     if (streamRef.current) {
@@ -82,13 +128,6 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         console.warn('Torch toggle not supported:', e);
       }
     }
-  };
-
-  const handleSelectBarcode = (code: string) => {
-    setScannedCode(code);
-    setTimeout(() => {
-      onBarcodeDetected(code);
-    }, 400);
   };
 
   return (
@@ -114,7 +153,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               <Camera className="h-10 w-10 text-neutral-600 mb-2 animate-pulse" />
               <p className="text-xs font-semibold text-neutral-300">Live Camera Viewfinder</p>
               <p className="text-[11px] text-neutral-500 mt-1 max-w-[200px]">
-                Camera stream active. Point directly at parcel barcode.
+                {cameraError || 'Camera stream active. Point directly at parcel barcode.'}
               </p>
             </div>
           )}
@@ -162,26 +201,17 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
           </div>
         </div>
 
-        {/* Quick Test Barcode Pills */}
+        {/* Quick barcode decoding status */}
         <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
               <Zap className="h-3.5 w-3.5 text-amber-600" />
-              Simulate Instant Barcode Scan:
+              Live camera scan
             </span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-            {sampleBarcodes.map(code => (
-              <button
-                key={code}
-                type="button"
-                onClick={() => handleSelectBarcode(code)}
-                className="flex items-center justify-center py-2 px-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 hover:border-amber-400 text-xs font-mono font-bold text-slate-800 hover:text-amber-800 active:scale-95 transition-all cursor-pointer shadow-xs"
-              >
-                {code}
-              </button>
-            ))}
-          </div>
+          <p className="text-[11px] text-slate-500">
+            Point the camera at a parcel barcode. Rabee will read it automatically when it is in focus.
+          </p>
         </div>
 
         {/* Manual Barcode Option */}
