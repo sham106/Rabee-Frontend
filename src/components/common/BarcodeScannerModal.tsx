@@ -22,6 +22,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   const codeReaderRef = useRef<BrowserCodeReader | null>(null);
   const [hasCameraAccess, setHasCameraAccess] = useState<boolean | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraStatus, setCameraStatus] = useState<'checking' | 'ready' | 'unsupported' | 'blocked'>('checking');
   const [torchOn, setTorchOn] = useState(false);
   const [scannedCode, setScannedCode] = useState<string | null>(null);
 
@@ -35,10 +36,13 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           if (isActive) {
             setHasCameraAccess(false);
-            setCameraError('This browser does not support camera-based barcode scanning. Please enter the barcode manually instead.');
+            setCameraStatus('unsupported');
+            setCameraError('This browser does not support camera-based barcode scanning. Please use a modern mobile browser or enter the barcode manually instead.');
           }
           return;
         }
+
+        setCameraStatus('checking');
 
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
@@ -61,7 +65,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         const reader = new BrowserCodeReader();
         codeReaderRef.current = reader;
 
-        const controls = await reader.decodeFromVideoDevice(undefined, videoRef.current, (result, error) => {
+        await reader.decodeFromVideoDevice(undefined, videoRef.current, (result, error) => {
           if (result) {
             const text = result.getText();
             if (!text) return;
@@ -80,16 +84,14 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
           }
         });
 
-        if (controls) {
-          (controls as any).stop?.();
-        }
-
+        setCameraStatus('ready');
         setHasCameraAccess(true);
       } catch (err) {
         console.warn('Camera access denied or unavailable for barcode scan:', err);
         if (isActive) {
           setHasCameraAccess(false);
-          setCameraError('Camera access was blocked or unavailable. Please allow camera permission or enter the barcode manually.');
+          setCameraStatus('blocked');
+          setCameraError('Camera access was blocked or unavailable. Please allow camera permission in your browser, then retry, or enter the barcode manually.');
         }
       }
     }
@@ -97,6 +99,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     if (isOpen) {
       setScannedCode(null);
       setCameraError(null);
+      setCameraStatus('checking');
       initCamera();
     }
 
@@ -151,9 +154,14 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
           ) : (
             <div className="flex flex-col items-center justify-center p-6 text-center text-neutral-400">
               <Camera className="h-10 w-10 text-neutral-600 mb-2 animate-pulse" />
-              <p className="text-xs font-semibold text-neutral-300">Live Camera Viewfinder</p>
-              <p className="text-[11px] text-neutral-500 mt-1 max-w-[200px]">
-                {cameraError || 'Camera stream active. Point directly at parcel barcode.'}
+              <p className="text-xs font-semibold text-neutral-300">
+                {cameraStatus === 'checking' ? 'Checking Camera Access' : 'Live Camera Viewfinder'}
+              </p>
+              <p className="text-[11px] text-neutral-500 mt-1 max-w-[220px]">
+                {cameraError ||
+                  (cameraStatus === 'checking'
+                    ? 'Checking whether your camera is available and permitted for scanning.'
+                    : 'Camera stream active. Point directly at parcel barcode.')}
               </p>
             </div>
           )}
